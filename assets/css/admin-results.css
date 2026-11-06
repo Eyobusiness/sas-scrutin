@@ -1,0 +1,429 @@
+/**
+ * SAS ÉLECTION - FEUILLE DE STYLE DES RÉSULTATS D'ADMINISTRATION
+ * Design épuré, compact et premium
+ * Compatible Mode Jour et Mode Nuit (variables CSS)
+ * Responsive Mobile-First (cartes sur téléphone, tableau sur bureau)
+ */
+
+:root,
+[data-theme="light"] {
+  --admin-res-bg: #f8fafc;
+  --admin-res-card-bg: #ffffff;
+  --admin-res-border: #e2e8f0;
+  --admin-res-border-subtle: #f1f5f9;
+  --admin-res-text: #0f172a;
+  --admin-res-heading: #0f172a;
+  --admin-res-muted: #64748b;
+  --admin-res-surface-hover: #f8fafc;
+  --admin-res-table-header: #f1f5f9;
+  --admin-res-track: #e2e8f0;
+
+  /* Distinctions */
+  --admin-res-gold: #d97706;
+  --admin-res-gold-light: #f59e0b;
+  --admin-res-gold-bg: rgba(245, 158, 11, 0.06);
+  --admin-res-gold-border: rgba(217, 119, 6, 0.4);
+  --admin-res-gold-badge: #fef3c7;
+  --admin-res-gold-badge-text: #92400e;
+
+  --admin-res-silver: #64748b;
+  --admin-res-silver-bg: rgba(100, 116, 139, 0.06);
+  --admin-res-silver-border: #cbd5e1;
+  --admin-res-silver-badge: #f1f5f9;
+  --admin-res-silver-badge-text: #334155;
+
+  --admin-res-bronze: #c2410c;
+  --admin-res-bronze-bg: rgba(194, 65, 12, 0.06);
+  --admin-res-bronze-border: #fed7aa;
+  --admin-res-bronze-badge: #ffedd5;
+  --admin-res-bronze-badge-text: #9a3412;
+
+  --admin-res-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.05);
+}
+
+[data-theme="dark"] {
+  --admin-res-bg: #0b1329;
+  --admin-res-card-bg: #1e293b;
+  --admin-res-border: rgba(255, 255, 255, 0.09);
+  --admin-res-border-subtle: rgba(255, 255, 255, 0.05);
+  --admin-res-text: #f8fafc;
+  --admin-res-heading: #ffffff;
+  --admin-res-muted: #94a3b8;
+  --admin-res-surface-hover: rgba(255, 255, 255, 0.035);
+  --admin-res-table-header: rgba(15, 23, 42, 0.6);
+  --admin-res-track: rgba(255, 255, 255, 0.08);
+
+  /* Distinctions */
+  --admin-res-gold: #fbbf24;
+  --admin-res-gold-light: #f59e0b;
+  --admin-res-gold-bg: rgba(245, 158, 11, 0.12);
+  --admin-res-gold-border: rgba(245, 158, 11, 0.45);
+  --admin-res-gold-badge: rgba(245, 158, 11, 0.2);
+  --admin-res-gold-badge-text: #fbbf24;
+
+  --admin-res-silver: #cbd5e1;
+  --admin-res-silver-bg: rgba(148, 163, 184, 0.1);
+  --admin-res-silver-border: rgba(148, 163, 184, 0.3);
+  --admin-res-silver-badge: rgba(148, 163, 184, 0.18);
+  --admin-res-silver-badge-text: #cbd5e1;
+
+  --admin-res-bronze: #fdba74;
+  --admin-res-bronze-bg: rgba(205, 127, 50, 0.12);
+  --admin-res-bronze-border: rgba(205, 127, 50, 0.35);
+  --admin-res-bronze-badge: rgba(205, 127, 50, 0.2);
+  --admin-res-bronze-badge-text: #fdba74;
+
+  --admin-res-shadow: 0 6px 20px -3px rgba(0, 0, 0, 0.4);
+}
+
+/* ==========================================
+   BANDEAU DU CANDIDAT EN TÊTE (LEADER)
+   ========================================== */
+.admin-leader-card {
+  background: var(--admin-res-card-bg);
+  border: 1.5px solid var(--admin-res-gold-border);
+  border-radius: 1rem;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 4px 20px -2px rgba(245, 158, 11, 0.15), var(--admin-res-shadow);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-leader-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 5px;
+  background: linear-gradient(180deg, var(--admin-res-gold) 0%, #b45309 100%);
+}
+
+.admin-leader-avatar-wrap {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.admin-leader-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2.5px solid var(--admin-res-gold);
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.25);
+  display: block;
+}
+
+.admin-leader-avatar-initials {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.45rem;
+  border: 2.5px solid var(--admin-res-gold);
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.25);
+  flex-shrink: 0;
+}
+
+.admin-leader-crown-badge {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--admin-res-gold);
+  color: #1e1b4b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  border: 2px solid var(--admin-res-card-bg);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.admin-leader-name {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--admin-res-heading);
+  margin-bottom: 0.2rem;
+  line-height: 1.25;
+}
+
+.admin-leader-score {
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: var(--admin-res-gold);
+}
+
+/* Carte égalité en tête */
+.admin-equality-card {
+  background: var(--admin-res-card-bg);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  border-left: 5px solid #f59e0b;
+  border-radius: 1rem;
+  padding: 1.25rem 1.5rem;
+  box-shadow: var(--admin-res-shadow);
+}
+
+/* ==========================================
+   TABLEAU MODERNE DES RÉSULTATS (DESKTOP)
+   ========================================== */
+.admin-results-table-card {
+  background: var(--admin-res-card-bg);
+  border: 1px solid var(--admin-res-border);
+  border-radius: 1rem;
+  box-shadow: var(--admin-res-shadow);
+  overflow: hidden;
+}
+
+.admin-results-table-card .card-header {
+  background: var(--admin-res-card-bg);
+  border-bottom: 1px solid var(--admin-res-border);
+  padding: 1.1rem 1.25rem;
+}
+
+.admin-results-table {
+  width: 100%;
+  margin-bottom: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.admin-results-table thead th {
+  background: var(--admin-res-table-header);
+  color: var(--admin-res-muted);
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  padding: 0.85rem 1.15rem;
+  border-bottom: 1px solid var(--admin-res-border);
+  white-space: nowrap;
+}
+
+.admin-results-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.admin-results-table tbody tr:hover {
+  background-color: var(--admin-res-surface-hover);
+}
+
+.admin-results-table tbody td {
+  padding: 0.95rem 1.15rem;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--admin-res-border-subtle);
+  color: var(--admin-res-text);
+}
+
+.admin-results-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Badges de rangs pour tableau */
+.admin-rank-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.admin-rank-pill.rank-gold {
+  background: var(--admin-res-gold-badge);
+  color: var(--admin-res-gold-badge-text);
+  border: 1px solid var(--admin-res-gold-border);
+}
+
+.admin-rank-pill.rank-silver {
+  background: var(--admin-res-silver-badge);
+  color: var(--admin-res-silver-badge-text);
+  border: 1px solid var(--admin-res-silver-border);
+}
+
+.admin-rank-pill.rank-bronze {
+  background: var(--admin-res-bronze-badge);
+  color: var(--admin-res-bronze-badge-text);
+  border: 1px solid var(--admin-res-bronze-border);
+}
+
+.admin-rank-pill.rank-neutral {
+  background: var(--admin-res-track);
+  color: var(--admin-res-muted);
+  border: 1px solid var(--admin-res-border);
+}
+
+/* Avatars dans le tableau */
+.admin-table-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--admin-res-border);
+  flex-shrink: 0;
+}
+
+.admin-table-avatar-initials {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #475569;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.95rem;
+  border: 2px solid var(--admin-res-border);
+  flex-shrink: 0;
+}
+
+/* Barres de progression adaptées au rang */
+.admin-prog-track {
+  width: 100%;
+  min-width: 120px;
+  height: 10px;
+  background: var(--admin-res-track);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.admin-prog-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.5s ease;
+}
+
+.admin-prog-fill.prog-gold {
+  background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
+}
+
+.admin-prog-fill.prog-silver {
+  background: linear-gradient(90deg, #94a3b8 0%, #64748b 100%);
+}
+
+.admin-prog-fill.prog-bronze {
+  background: linear-gradient(90deg, #ea580c 0%, #cd7f32 100%);
+}
+
+.admin-prog-fill.prog-neutral {
+  background: linear-gradient(90deg, #3b82f6 0%, #6366f1 100%);
+}
+
+/* ==========================================
+   VUE MOBILE EN CARTES COMPACTES (< 768px)
+   ========================================== */
+.admin-mobile-card {
+  background: var(--admin-res-card-bg);
+  border: 1px solid var(--admin-res-border);
+  border-radius: 0.9rem;
+  padding: 1rem;
+  margin-bottom: 0.85rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  transition: border-color 0.15s ease;
+}
+
+.admin-mobile-card.is-leader-card {
+  border: 1.5px solid var(--admin-res-gold-border);
+  background: var(--admin-res-gold-bg);
+}
+
+.admin-mobile-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.admin-mobile-card-user {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.admin-mobile-card-stats {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 0.45rem;
+}
+
+/* Responsive media queries */
+@media (max-width: 767.98px) {
+  .admin-leader-card {
+    padding: 1rem;
+  }
+  .admin-leader-avatar,
+  .admin-leader-avatar-initials {
+    width: 52px;
+    height: 52px;
+    font-size: 1.25rem;
+  }
+  .admin-leader-name {
+    font-size: 1.1rem;
+  }
+  .admin-leader-score {
+    font-size: 1.2rem;
+  }
+}
+
+/* ==========================================================================
+   RÈGLES VISUELLES D'ÉGALITÉ (ORANGE) & DE VICTOIRE (VERT) EN ADMIN
+   ========================================================================== */
+
+.admin-equality-card {
+  border-color: #f97316 !important;
+  border-left: 6px solid #ea580c !important;
+  background: #fff7ed !important;
+}
+
+.admin-comite-instruction {
+  background: #ea580c;
+  color: #ffffff;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  border-radius: 0.6rem;
+  padding: 0.45rem 0.95rem;
+  display: inline-block;
+}
+
+.admin-rank-pill.rank-equality-orange {
+  background: #ffedd5;
+  color: #c2410c;
+  border-color: #f97316;
+}
+
+.admin-prog-fill.prog-equality-orange {
+  background: linear-gradient(90deg, #ea580c 0%, #fb923c 100%) !important;
+}
+
+.admin-mobile-card.is-equality-card {
+  border: 2px solid #f97316 !important;
+  background: #fff7ed !important;
+}
+
+.admin-leader-card.is-winner-green {
+  border-color: #16a34a;
+  border-left: 6px solid #16a34a;
+  background: #ffffff;
+}
+
+.admin-prog-fill.prog-winner-green {
+  background: linear-gradient(90deg, #15803d 0%, #22c55e 100%);
+}

@@ -1,0 +1,853 @@
+/* ==========================================================================
+   SAS ÉLECTION — ANIMATIONS PREMIUM & MICRO-INTERACTIONS (animations.css)
+   Complément modulaire exploitant les variables et classes du template existant
+   Compatible Mode Jour ([data-theme="light"]) & Mode Nuit ([data-theme="dark"])
+   ========================================================================== */
+
+:root {
+  --sas-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --sas-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --sas-ease-std: cubic-bezier(0.4, 0, 0.2, 1);
+  --sas-dur-fast: 180ms;
+  --sas-dur-base: 280ms;
+  --sas-dur-slow: 480ms;
+  --sas-dur-hero: 620ms;
+  --sas-glow-primary: rgba(37, 99, 235, 0.22);
+  --sas-glow-gold: rgba(245, 158, 11, 0.28);
+  --sas-glow-success: rgba(22, 163, 74, 0.24);
+  --sas-hover-lift: -4px;
+  --sas-hover-shadow: 0 14px 30px -8px rgba(15, 23, 42, 0.11), 0 4px 10px -4px rgba(15, 23, 42, 0.05);
+}
+
+[data-theme="dark"] {
+  --sas-glow-primary: rgba(59, 130, 246, 0.32);
+  --sas-glow-gold: rgba(251, 191, 36, 0.32);
+  --sas-glow-success: rgba(16, 185, 129, 0.3);
+  --sas-hover-shadow: 0 16px 34px -8px rgba(0, 0, 0, 0.45), 0 4px 12px -4px rgba(0, 0, 0, 0.3);
+}
+
+/* ==========================================================================
+   1. KEYFRAMES FONDAMENTAUX (GPU-friendly : transform & opacity)
+   ========================================================================== */
+
+@keyframes sasFadeUp {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes sasFadeDown {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -12px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes sasScaleIn {
+  from {
+    opacity: 0;
+    transform: scale3d(0.94, 0.94, 1);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes sasRowFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes sasCheckPop {
+  0% {
+    opacity: 0;
+    transform: scale3d(0.5, 0.5, 1);
+  }
+  65% {
+    opacity: 1;
+    transform: scale3d(1.12, 1.12, 1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale3d(1, 1, 1);
+  }
+}
+
+@keyframes sasPulseRing {
+  0% {
+    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.38);
+  }
+  70% {
+    box-shadow: 0 0 0 9px rgba(37, 99, 235, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0);
+  }
+}
+
+@keyframes sasPulseSuccess {
+  0% {
+    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.42);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(22, 163, 74, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0);
+  }
+}
+
+@keyframes sasHeroShimmer {
+  0% {
+    transform: translate3d(-30%, -20%, 0) scale(1);
+    opacity: 0.45;
+  }
+  50% {
+    transform: translate3d(10%, 10%, 0) scale(1.08);
+    opacity: 0.7;
+  }
+  100% {
+    transform: translate3d(-30%, -20%, 0) scale(1);
+    opacity: 0.45;
+  }
+}
+
+@keyframes sasGoldenSweep {
+  0% {
+    transform: translateX(-120%) skewX(-18deg);
+  }
+  40%, 100% {
+    transform: translateX(220%) skewX(-18deg);
+  }
+}
+
+@keyframes sasSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ==========================================================================
+   2. ANIMATIONS DE LA PAGE D'ACCUEIL (Section 3)
+   ========================================================================== */
+
+.hero-section {
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 16px 40px -12px rgba(30, 58, 138, 0.35);
+}
+
+/* Effet lumineux discret en arrière-plan du Hero */
+.hero-section::before {
+  content: "";
+  position: absolute;
+  top: -35%;
+  right: -12%;
+  width: 420px;
+  height: 420px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0) 70%);
+  pointer-events: none;
+  animation: sasHeroShimmer 11s ease-in-out infinite;
+}
+
+.hero-section::after {
+  content: "";
+  position: absolute;
+  bottom: -40%;
+  left: -10%;
+  width: 360px;
+  height: 360px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.14) 0%, rgba(251, 191, 36, 0) 70%);
+  pointer-events: none;
+}
+
+.hero-section > .container {
+  position: relative;
+  z-index: 2;
+}
+
+/* Apparition progressive du badge, du titre, du paragraphe et des boutons */
+.hero-section .badge {
+  animation: sasFadeDown var(--sas-dur-slow) var(--sas-ease-out) both;
+}
+
+.hero-section h1 {
+  animation: sasFadeUp var(--sas-dur-hero) var(--sas-ease-out) 80ms both;
+}
+
+.hero-section .lead {
+  animation: sasFadeUp var(--sas-dur-hero) var(--sas-ease-out) 160ms both;
+}
+
+.hero-section .d-inline-flex {
+  animation: sasFadeUp var(--sas-dur-hero) var(--sas-ease-out) 240ms both;
+}
+
+/* Navbar publique avec profondeur douce */
+.public-navbar {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.94);
+  transition: box-shadow var(--sas-dur-base) var(--sas-ease-std), background-color var(--sas-dur-base) var(--sas-ease-std);
+}
+
+.public-navbar .navbar-brand img {
+  transition: transform var(--sas-dur-base) var(--sas-ease-spring);
+}
+
+.public-navbar .navbar-brand:hover img {
+  transform: scale(1.06) rotate(-2deg);
+}
+
+/* ==========================================================================
+   3. ANIMATIONS DES CARTES (Section 4)
+   ========================================================================== */
+
+.portal-card,
+.metric-card,
+.panel,
+.kpi-card-res,
+.admin-mobile-card,
+.results-card {
+  transition:
+    transform var(--sas-dur-base) var(--sas-ease-out),
+    box-shadow var(--sas-dur-base) var(--sas-ease-out),
+    border-color var(--sas-dur-base) var(--sas-ease-out);
+}
+
+/* Cartes du portail d'accueil : apparition échelonnée + élévation harmonisée */
+.portal-card {
+  animation: sasFadeUp var(--sas-dur-slow) var(--sas-ease-out) both;
+  position: relative;
+  overflow: hidden;
+}
+
+.row > div:nth-child(1) > .portal-card { animation-delay: 80ms; }
+.row > div:nth-child(2) > .portal-card { animation-delay: 150ms; }
+.row > div:nth-child(3) > .portal-card { animation-delay: 220ms; }
+.row > div:nth-child(4) > .portal-card { animation-delay: 290ms; }
+
+.portal-card:hover {
+  transform: translate3d(0, var(--sas-hover-lift), 0);
+  box-shadow: var(--sas-hover-shadow);
+  border-color: rgba(37, 99, 235, 0.25);
+}
+
+/* Animation discrète des icônes de cartes au survol */
+.portal-icon,
+.metric-icon,
+.page-icon,
+.kpi-icon-wrap {
+  transition:
+    transform var(--sas-dur-base) var(--sas-ease-spring),
+    box-shadow var(--sas-dur-base) var(--sas-ease-out);
+}
+
+.portal-card:hover .portal-icon {
+  transform: translateY(-2px) scale(1.08);
+  box-shadow: 0 8px 18px -6px rgba(37, 99, 235, 0.25);
+}
+
+.metric-card {
+  animation: sasFadeUp var(--sas-dur-slow) var(--sas-ease-out) both;
+}
+
+.row > div:nth-child(1) > .metric-card { animation-delay: 50ms; }
+.row > div:nth-child(2) > .metric-card { animation-delay: 110ms; }
+.row > div:nth-child(3) > .metric-card { animation-delay: 170ms; }
+.row > div:nth-child(4) > .metric-card { animation-delay: 230ms; }
+
+.metric-card:hover {
+  transform: translate3d(0, -3px, 0);
+  box-shadow: var(--sas-hover-shadow);
+  border-color: rgba(37, 99, 235, 0.26);
+}
+
+.metric-card:hover .metric-icon {
+  transform: scale(1.08) rotate(-3deg);
+}
+
+/* Cartes génériques d'information et de garanties */
+.card {
+  transition:
+    transform var(--sas-dur-base) var(--sas-ease-out),
+    box-shadow var(--sas-dur-base) var(--sas-ease-out),
+    border-color var(--sas-dur-base) var(--sas-ease-out);
+}
+
+.row.g-4 > [class*="col-"] > .card.h-100:hover {
+  transform: translate3d(0, -3px, 0);
+  box-shadow: var(--sas-hover-shadow) !important;
+  border-color: rgba(37, 99, 235, 0.22) !important;
+}
+
+.row.g-4 > [class*="col-"] > .card.h-100 i.fs-2 {
+  transition: transform var(--sas-dur-base) var(--sas-ease-spring);
+  display: inline-block;
+}
+
+.row.g-4 > [class*="col-"] > .card.h-100:hover i.fs-2 {
+  transform: scale(1.12);
+}
+
+/* Panels d'administration */
+.panel {
+  animation: sasFadeUp var(--sas-dur-slow) var(--sas-ease-out) both;
+}
+
+.panel:hover {
+  border-color: rgba(148, 163, 184, 0.45);
+}
+
+/* Révélation progressive pilotée par IntersectionObserver (uniquement quand JS est actif) */
+html.js-anim-ready .sas-reveal {
+  opacity: 0;
+  transform: translate3d(0, 16px, 0);
+  transition:
+    opacity var(--sas-dur-slow) var(--sas-ease-out),
+    transform var(--sas-dur-slow) var(--sas-ease-out);
+}
+
+html.js-anim-ready .sas-reveal.is-visible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+/* ==========================================================================
+   4. ANIMATIONS DES BOUTONS ET LIENS (Section 5)
+   ========================================================================== */
+
+.btn {
+  position: relative;
+  transition:
+    transform var(--sas-dur-fast) var(--sas-ease-out),
+    box-shadow var(--sas-dur-fast) var(--sas-ease-out),
+    background-color var(--sas-dur-fast) var(--sas-ease-std),
+    border-color var(--sas-dur-fast) var(--sas-ease-std),
+    color var(--sas-dur-fast) var(--sas-ease-std);
+}
+
+.btn:hover:not(:disabled):not(.disabled) {
+  transform: translate3d(0, -1px, 0);
+}
+
+/* Effet d'enfoncement léger au clic */
+.btn:active:not(:disabled):not(.disabled) {
+  transform: translate3d(0, 0, 0) scale(0.98) !important;
+}
+
+/* Animation des icônes associées aux boutons */
+.btn i.bi {
+  display: inline-block;
+  transition: transform var(--sas-dur-fast) var(--sas-ease-spring);
+}
+
+.btn:hover:not(:disabled) i.bi-arrow-right,
+.btn:hover:not(:disabled) i.bi-box-arrow-in-right {
+  transform: translateX(3px);
+}
+
+.btn:hover:not(:disabled) i.bi-arrow-left {
+  transform: translateX(-3px);
+}
+
+.btn:hover:not(:disabled) i.bi-trophy,
+.btn:hover:not(:disabled) i.bi-fingerprint,
+.btn:hover:not(:disabled) i.bi-check2-circle,
+.btn:hover:not(:disabled) i.bi-person-plus,
+.btn:hover:not(:disabled) i.bi-person-badge,
+.btn:hover:not(:disabled) i.bi-patch-check-fill {
+  transform: scale(1.12);
+}
+
+/* Mise en évidence douce des boutons d'action principale */
+.btn-primary:hover:not(:disabled),
+.btn-success:hover:not(:disabled) {
+  box-shadow: 0 6px 16px -3px var(--sas-glow-primary);
+}
+
+.hero-section .btn-warning {
+  box-shadow: 0 8px 22px -4px rgba(245, 158, 11, 0.45);
+}
+
+.hero-section .btn-warning:hover {
+  box-shadow: 0 12px 26px -4px rgba(245, 158, 11, 0.6);
+}
+
+/* Indicateur visuel pendant les opérations de chargement (submit) */
+.btn.is-loading {
+  pointer-events: none;
+  opacity: 0.88;
+}
+
+.btn.is-loading .sas-btn-spinner {
+  display: inline-block;
+  width: 0.95em;
+  height: 0.95em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: sasSpin 0.65s linear infinite;
+  vertical-align: -0.125em;
+  margin-right: 0.45rem;
+}
+
+/* ==========================================================================
+   5. ANIMATIONS DES TABLEAUX ET LISTES ADMIN (Section 6)
+   ========================================================================== */
+
+.table tbody tr,
+.admin-results-table tbody tr {
+  transition: background-color var(--sas-dur-fast) var(--sas-ease-std);
+  animation: sasRowFadeIn 280ms var(--sas-ease-out) both;
+}
+
+/* Garantir que le menu déroulant (Options) d'une ligne de tableau s'affiche toujours au-dessus de tout */
+.table tbody tr.sas-dropdown-open,
+.table tbody tr:has(.dropdown-menu.show) {
+  position: relative;
+  z-index: 1060 !important;
+  transform: none !important;
+}
+
+.table .dropdown-menu.show,
+.table-responsive .dropdown-menu.show {
+  z-index: 1090 !important;
+}
+
+/* Apparition progressive échelonnée des premières lignes */
+.table tbody tr:nth-child(1), .admin-results-table tbody tr:nth-child(1) { animation-delay: 25ms; }
+.table tbody tr:nth-child(2), .admin-results-table tbody tr:nth-child(2) { animation-delay: 50ms; }
+.table tbody tr:nth-child(3), .admin-results-table tbody tr:nth-child(3) { animation-delay: 75ms; }
+.table tbody tr:nth-child(4), .admin-results-table tbody tr:nth-child(4) { animation-delay: 100ms; }
+.table tbody tr:nth-child(5), .admin-results-table tbody tr:nth-child(5) { animation-delay: 125ms; }
+.table tbody tr:nth-child(6), .admin-results-table tbody tr:nth-child(6) { animation-delay: 150ms; }
+.table tbody tr:nth-child(7), .admin-results-table tbody tr:nth-child(7) { animation-delay: 175ms; }
+.table tbody tr:nth-child(8), .admin-results-table tbody tr:nth-child(8) { animation-delay: 200ms; }
+
+/* Transition fluide lors du filtrage en direct */
+.table tbody tr.sas-row-filtered-in {
+  animation: sasRowFadeIn 200ms var(--sas-ease-out) both;
+}
+
+/* Transitions sur les badges de statut */
+.badge,
+.badge-soft,
+.admin-rank-badge {
+  transition:
+    transform var(--sas-dur-fast) var(--sas-ease-spring),
+    box-shadow var(--sas-dur-fast) var(--sas-ease-out),
+    background-color var(--sas-dur-fast) var(--sas-ease-std);
+}
+
+.table tbody tr:hover .badge,
+.table tbody tr:hover .badge-soft {
+  transform: scale(1.03);
+}
+
+/* ==========================================================================
+   6. ANIMATIONS DES FORMULAIRES ET MODALES (Section 7)
+   ========================================================================== */
+
+.form-control,
+.form-select,
+.input-group-text {
+  transition:
+    border-color var(--sas-dur-fast) var(--sas-ease-std),
+    box-shadow var(--sas-dur-fast) var(--sas-ease-std),
+    background-color var(--sas-dur-fast) var(--sas-ease-std),
+    transform var(--sas-dur-fast) var(--sas-ease-out);
+}
+
+.form-control:focus,
+.form-select:focus {
+  box-shadow: 0 0 0 0.22rem rgba(37, 99, 235, 0.15);
+}
+
+/* Mise en évidence douce du groupe de champ actif */
+.input-group {
+  border-radius: 0.65rem;
+  transition: box-shadow var(--sas-dur-fast) var(--sas-ease-std);
+}
+
+.input-group:focus-within {
+  box-shadow: 0 0 0 0.22rem rgba(37, 99, 235, 0.14);
+}
+
+.input-group:focus-within .input-group-text {
+  border-color: #93c5fd;
+  color: var(--admin-primary, #2563eb) !important;
+}
+
+.input-group:focus-within .form-control {
+  box-shadow: none;
+  border-color: #93c5fd;
+}
+
+/* Apparition douce des messages d'alerte et de validation */
+.alert {
+  animation: sasFadeDown 300ms var(--sas-ease-out) both;
+}
+
+.invalid-feedback,
+.valid-feedback {
+  animation: sasFadeDown 200ms var(--sas-ease-out) both;
+}
+
+/* Ouverture et fermeture fluides des fenêtres modales Bootstrap */
+.modal.fade .modal-dialog {
+  transform: translate3d(0, -14px, 0) scale(0.97);
+  transition: transform 240ms var(--sas-ease-out), opacity 200ms var(--sas-ease-std);
+}
+
+.modal.show .modal-dialog {
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+.modal-content {
+  border: 1px solid var(--admin-border, #e2e8f0);
+  box-shadow: 0 24px 48px -12px rgba(15, 23, 42, 0.22);
+}
+
+/* Carte de connexion administration */
+.auth-card.login-card {
+  animation: sasScaleIn 420ms var(--sas-ease-out) both;
+}
+
+/* Popup style SweetAlert2 (Confirmation de vote & alertes interactives) */
+@keyframes sasSwalPop {
+  0% {
+    opacity: 0;
+    transform: scale3d(0.82, 0.82, 1) translate3d(0, 12px, 0);
+  }
+  70% {
+    opacity: 1;
+    transform: scale3d(1.02, 1.02, 1) translate3d(0, 0, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale3d(1, 1, 1) translate3d(0, 0, 0);
+  }
+}
+
+.sas-swal-modal .modal-content {
+  border: none;
+  border-radius: 1.35rem;
+  box-shadow: 0 25px 55px -12px rgba(15, 23, 42, 0.28), 0 0 0 1px rgba(226, 232, 240, 0.8);
+  overflow: hidden;
+}
+
+.sas-swal-modal.show .modal-dialog {
+  animation: sasSwalPop 340ms var(--sas-ease-spring) both;
+}
+
+.sas-swal-icon {
+  width: 78px;
+  height: 78px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.25rem;
+  margin: 0 auto 1rem;
+  animation: sasCheckPop 480ms var(--sas-ease-spring) 60ms both;
+}
+
+.sas-swal-icon.is-confirm {
+  background: #dcfce7;
+  color: #16a34a;
+  border: 3px solid #bbf7d0;
+  animation: sasCheckPop 480ms var(--sas-ease-spring) 60ms both, sasPulseSuccess 2.2s 500ms infinite;
+}
+
+.sas-swal-icon.is-warning {
+  background: #fef3c7;
+  color: #d97706;
+  border: 3px solid #fde68a;
+}
+
+.sas-swal-candidate-box {
+  background: #f8fafc;
+  border: 2px solid #bfdbfe;
+  border-radius: 1rem;
+  padding: 0.9rem 1rem;
+  transition: transform var(--sas-dur-base) var(--sas-ease-out);
+}
+
+.sas-swal-candidate-photo {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #2563eb;
+  flex-shrink: 0;
+}
+
+.sas-swal-candidate-placeholder {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #dbeafe;
+  color: #1d4ed8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   7. ANIMATIONS DU PROCESSUS ÉLECTORAL & DU VOTE (Section 8)
+   ========================================================================== */
+
+/* Progression animée des étapes d'authentification et de vote (voter.php) */
+.step-indicator .step-pill {
+  transition:
+    background-color var(--sas-dur-base) var(--sas-ease-std),
+    color var(--sas-dur-base) var(--sas-ease-std),
+    transform var(--sas-dur-base) var(--sas-ease-spring),
+    box-shadow var(--sas-dur-base) var(--sas-ease-out);
+}
+
+.step-indicator .step-pill.active {
+  transform: translateY(-1px) scale(1.03);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.28);
+  animation: sasPulseRing 2.4s infinite;
+}
+
+.step-indicator .step-pill.done {
+  animation: sasScaleIn 260ms var(--sas-ease-spring) both;
+}
+
+/* Cartes de sélection des candidats sur le bulletin de vote */
+.candidate-select-card {
+  transition:
+    transform var(--sas-dur-base) var(--sas-ease-out),
+    box-shadow var(--sas-dur-base) var(--sas-ease-out),
+    border-color var(--sas-dur-fast) var(--sas-ease-std),
+    background-color var(--sas-dur-fast) var(--sas-ease-std) !important;
+}
+
+.candidate-select-card:hover {
+  transform: translate3d(0, -3px, 0) !important;
+  box-shadow: 0 10px 24px -6px rgba(37, 99, 235, 0.16) !important;
+}
+
+.candidate-select-card.selected,
+.candidate-select-card:has(input[type="radio"]:checked) {
+  transform: translate3d(0, -2px, 0);
+  animation: sasPulseRing 2.2s infinite;
+}
+
+.candidate-select-card .candidate-photo-ballot,
+.candidate-select-card .candidate-photo-thumb {
+  transition: transform var(--sas-dur-base) var(--sas-ease-spring), border-color var(--sas-dur-fast) var(--sas-ease-std);
+}
+
+.candidate-select-card:hover .candidate-photo-ballot,
+.candidate-select-card:hover .candidate-photo-thumb,
+.candidate-select-card.selected .candidate-photo-ballot {
+  transform: scale(1.05);
+}
+
+/* Mise en valeur de la phase électorale active (chronologie details.php & badges) */
+tr.table-primary td {
+  transition: background-color var(--sas-dur-base) var(--sas-ease-std);
+}
+
+tr.table-primary .badge.bg-primary {
+  animation: sasPulseRing 2.2s infinite;
+}
+
+/* Confirmation visuelle rassurante après enregistrement du vote (vote_succes.php) */
+.sas-vote-success-card {
+  animation: sasScaleIn 460ms var(--sas-ease-out) both;
+}
+
+.sas-vote-success-icon {
+  animation: sasCheckPop 580ms var(--sas-ease-spring) 120ms both, sasPulseSuccess 2.5s 700ms infinite;
+}
+
+/* ==========================================================================
+   8. ANIMATIONS DE LA PAGE DES RÉSULTATS PUBLICS & ADMIN (Section 9)
+   ========================================================================== */
+
+/* Bannière de proclamation du vainqueur : éclat doré discret */
+.winner-proclamation-banner {
+  position: relative;
+  overflow: hidden;
+  animation: sasScaleIn 520ms var(--sas-ease-out) both;
+}
+
+.winner-proclamation-banner::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 45%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.14) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  pointer-events: none;
+  animation: sasGoldenSweep 6.5s ease-in-out infinite;
+}
+
+/* Carte du leader en administration */
+.admin-leader-card {
+  position: relative;
+  overflow: hidden;
+  animation: sasScaleIn 460ms var(--sas-ease-out) both;
+  transition: transform var(--sas-dur-base) var(--sas-ease-out), box-shadow var(--sas-dur-base) var(--sas-ease-out);
+}
+
+.admin-leader-card:hover {
+  transform: translate3d(0, -2px, 0);
+}
+
+/* Apparition progressive du podium (Or, Argent, Bronze) */
+.podium-card {
+  animation: sasFadeUp 540ms var(--sas-ease-out) both;
+}
+
+.podium-card.podium-silver { animation-delay: 140ms; }
+.podium-card.podium-gold   { animation-delay: 60ms; }
+.podium-card.podium-bronze { animation-delay: 220ms; }
+
+.podium-card .podium-avatar,
+.podium-card .podium-avatar-initials {
+  transition: transform var(--sas-dur-base) var(--sas-ease-spring);
+}
+
+.podium-card:hover .podium-avatar,
+.podium-card:hover .podium-avatar-initials {
+  transform: scale(1.06);
+}
+
+/* Cartes KPI de participation */
+.kpi-card-res {
+  animation: sasFadeUp 440ms var(--sas-ease-out) both;
+}
+
+.kpi-section .row > div:nth-child(1) .kpi-card-res { animation-delay: 60ms; }
+.kpi-section .row > div:nth-child(2) .kpi-card-res { animation-delay: 120ms; }
+.kpi-section .row > div:nth-child(3) .kpi-card-res { animation-delay: 180ms; }
+.kpi-section .row > div:nth-child(4) .kpi-card-res { animation-delay: 240ms; }
+
+.kpi-card-res:hover .kpi-icon-wrap {
+  transform: scale(1.1) rotate(-3deg);
+}
+
+/* Apparition ordonnée des cartes de classement */
+.ranking-card-item {
+  animation: sasFadeUp 420ms var(--sas-ease-out) both;
+}
+
+.ranking-section .ranking-card-item:nth-of-type(1) { animation-delay: 80ms; }
+.ranking-section .ranking-card-item:nth-of-type(2) { animation-delay: 140ms; }
+.ranking-section .ranking-card-item:nth-of-type(3) { animation-delay: 200ms; }
+.ranking-section .ranking-card-item:nth-of-type(4) { animation-delay: 260ms; }
+.ranking-section .ranking-card-item:nth-of-type(5) { animation-delay: 320ms; }
+
+/* Animation progressive des barres de progression (suffrages & participation) */
+@keyframes sasBarFillGrow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.ranking-bar-fill,
+.admin-prog-fill,
+.progress .progress-bar {
+  display: block;
+  transform-origin: left center;
+  animation: sasBarFillGrow 850ms var(--sas-ease-out) both;
+  transition: width 600ms var(--sas-ease-out);
+}
+
+/* ==========================================================================
+   9. RESPONSIVE MOBILE-FIRST (Section 10)
+   ========================================================================== */
+
+@media (max-width: 767.98px) {
+  :root {
+    --sas-hover-lift: -2px;
+  }
+
+  /* Éviter tout débordement horizontal dû aux animations sur mobile */
+  body {
+    overflow-x: clip;
+  }
+
+  /* Déplacements réduits et tactiles sur mobile */
+  .portal-card:hover,
+  .metric-card:hover,
+  .kpi-card-res:hover,
+  .ranking-card-item:hover {
+    transform: translate3d(0, -2px, 0);
+  }
+
+  .btn {
+    min-height: 42px;
+  }
+
+  .btn-sm {
+    min-height: 36px;
+  }
+}
+
+/* ==========================================================================
+   10. ACCESSIBILITÉ & PRÉFÉRENCE DE RÉDUCTION DES MOUVEMENTS (Section 11)
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .portal-card:hover,
+  .metric-card:hover,
+  .card:hover,
+  .btn:hover,
+  .podium-card:hover,
+  .podium-card.podium-gold,
+  .podium-card.podium-gold:hover,
+  .ranking-card-item:hover,
+  .candidate-select-card:hover {
+    transform: none !important;
+  }
+
+  html.js-anim-ready .sas-reveal,
+  html.js-anim-ready .sas-bar-init {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+

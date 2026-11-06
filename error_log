@@ -1,0 +1,27 @@
+[02-Nov-2026 18:10:59 Africa/Abidjan] Erreur de connexion PDO : SQLSTATE[HY000] [1045] Access denied for user 'root'@'localhost' (using password: NO)
+[02-Nov-2026 18:13:53 Africa/Abidjan] Erreur de connexion PDO : SQLSTATE[HY000] [1045] Access denied for user 'root'@'localhost' (using password: NO)
+[02-Nov-2026 18:13:53 Africa/Abidjan] Erreur de connexion PDO : SQLSTATE[HY000] [1045] Access denied for user 'root'@'localhost' (using password: NO)
+[02-Nov-2026 18:18:27 Africa/Abidjan] Erreur de connexion PDO : SQLSTATE[HY000] [1045] Access denied for user 'root'@'localhost' (using password: NO)
+[02-Nov-2026 18:18:27 Africa/Abidjan] Erreur de connexion PDO : SQLSTATE[HY000] [1045] Access denied for user 'root'@'localhost' (using password: NO)
+[02-Nov-2026 18:21:29 Africa/Abidjan] Erreur de connexion PDO : SQLSTATE[HY000] [1045] Access denied for user 'root'@'localhost' (using password: NO)
+[02-Nov-2026 18:21:32 Africa/Abidjan] Erreur de connexion PDO : SQLSTATE[HY000] [1045] Access denied for user 'root'@'localhost' (using password: NO)
+[02-Nov-2026 18:28:10 Africa/Abidjan] Erreur de connexion PDO : SQLSTATE[HY000] [2002] php_network_getaddresses: getaddrinfo for http failed: Name or service not known
+[02-Nov-2026 18:28:12 Africa/Abidjan] Erreur de connexion PDO : SQLSTATE[HY000] [2002] php_network_getaddresses: getaddrinfo for http failed: Name or service not known
+[02-Nov-2026 18:28:16 Africa/Abidjan] Erreur de connexion PDO : SQLSTATE[HY000] [2002] php_network_getaddresses: getaddrinfo for http failed: Name or service not known
+[02-Nov-2026 18:28:19 Africa/Abidjan] Erreur de connexion PDO : SQLSTATE[HY000] [2002] php_network_getaddresses: getaddrinfo for http failed: Name or service not known
+[02-Nov-2026 18:28:31 Africa/Abidjan] Erreur de connexion PDO : SQLSTATE[HY000] [2002] php_network_getaddresses: getaddrinfo for http failed: Name or service not known
+[02-Nov-2026 18:28:33 Africa/Abidjan] Erreur de connexion PDO : SQLSTATE[HY000] [2002] php_network_getaddresses: getaddrinfo for http failed: Name or service not known
+[02-Nov-2026 18:31:21 Africa/Abidjan] Erreur de connexion PDO : SQLSTATE[HY000] [2002] php_network_getaddresses: getaddrinfo for https failed: Name or service not known
+[02-Nov-2026 18:36:26 Africa/Abidjan] Erreur de connexion PDO : SQLSTATE[HY000] [2002] php_network_getaddresses: getaddrinfo for https failed: Name or service not known
+[02-Nov-2026 18:36:29 Africa/Abidjan] Erreur de connexion PDO : SQLSTATE[HY000] [2002] php_network_getaddresses: getaddrinfo for https failed: Name or service not known
+[02-Nov-2026 18:36:36 Africa/Abidjan] Erreur de connexion PDO : SQLSTATE[HY000] [2002] php_network_getaddresses: getaddrinfo for https failed: Name or service not known
+[02-Nov-2026 19:29:49 Africa/Abidjan] Erreur de connexion PDO : SQLSTATE[HY000] [2002] php_network_getaddresses: getaddrinfo for https failed: Name or service not known
+[02-Nov-2026 19:46:22 Africa/Abidjan] Erreur de connexion PDO : SQLSTATE[HY000] [2002] php_network_getaddresses: getaddrinfo for https failed: Name or service not known
+[02-Nov-2026 19:49:56 Africa/Abidjan] Erreur de connexion PDO : SQLSTATE[HY000] [2002] php_network_getaddresses: getaddrinfo for https failed: Name or service not known
+[04-Nov-2026 09:37:39 Africa/Abidjan] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY093]: Invalid parameter number in /home2/amicijeu/electionsas.l2vservices.com/app/Models/Membre.php:176
+Stack trace:
+#0 /home2/amicijeu/electionsas.l2vservices.com/app/Models/Membre.php(176): PDOStatement->execute(Array)
+#1 /home2/amicijeu/electionsas.l2vservices.com/app/Controllers/MembreController.php(46): Membre->getAll(Array)
+#2 /home2/amicijeu/electionsas.l2vservices.com/index.php(78): MembreController->index()
+#3 {main}
+  thrown in /home2/amicijeu/electionsas.l2vservices.com/app/Models/Membre.php on line 176
