@@ -34,7 +34,9 @@ $activeElection = $activeElection ?? (($derniereElection && !empty($phaseInfo['v
         }
         
         body {
-            background-image: url('https://electionsas.l2vservices.com/assets/images/logo/sas.jpg');
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5)),
+                url('https://electionsas.l2vservices.com/assets/images/logo/sas.jpg');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;

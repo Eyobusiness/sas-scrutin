@@ -10,17 +10,17 @@ declare(strict_types=1);
 // Fuseau horaire officiel de référence : Africa/Abidjan (UTC+00:00)
 date_default_timezone_set('Africa/Abidjan');
 
-// if (!defined('DB_HOST')) define('DB_HOST', 'localhost');
-// if (!defined('DB_PORT')) define('DB_PORT', '3306');
-// if (!defined('DB_NAME')) define('DB_NAME', 'sas_election');
-// if (!defined('DB_USER')) define('DB_USER', 'root');
-// if (!defined('DB_PASS')) define('DB_PASS', '');
-
 if (!defined('DB_HOST')) define('DB_HOST', 'localhost');
 if (!defined('DB_PORT')) define('DB_PORT', '3306');
-if (!defined('DB_NAME')) define('DB_NAME', 'amicijeu_electionsas');
-if (!defined('DB_USER')) define('DB_USER', 'amicijeu_l2v');
-if (!defined('DB_PASS')) define('DB_PASS', '98044322@Root');
+if (!defined('DB_NAME')) define('DB_NAME', 'sas_election');
+if (!defined('DB_USER')) define('DB_USER', 'root');
+if (!defined('DB_PASS')) define('DB_PASS', '');
+
+// if (!defined('DB_HOST')) define('DB_HOST', 'localhost');
+// if (!defined('DB_PORT')) define('DB_PORT', '3306');
+// if (!defined('DB_NAME')) define('DB_NAME', 'amicijeu_electionsas');
+// if (!defined('DB_USER')) define('DB_USER', 'amicijeu_l2v');
+// if (!defined('DB_PASS')) define('DB_PASS', '98044322@Root');
 
 class Database
 {

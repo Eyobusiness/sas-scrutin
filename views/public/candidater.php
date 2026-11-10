@@ -90,6 +90,9 @@ $maxDate = date('Y-m-d');
                         <a href="index.php?page=home" class="btn btn-primary px-4">
                             <i class="bi bi-house me-1"></i> Retour à l'accueil
                         </a>
+                        <a href="index.php?page=candidater&amp;nouveau=1" class="btn btn-outline-primary px-4">
+                            Déposer une autre candidature
+                        </a>
                     </div>
                 </div>
             <?php else: ?>
@@ -124,11 +127,15 @@ $maxDate = date('Y-m-d');
                         <a href="index.php?page=home" class="btn btn-primary px-4">
                             <i class="bi bi-house me-1"></i> Retour à l'accueil
                         </a>
+                        <a href="index.php?page=candidater&amp;nouveau=1" class="btn btn-outline-primary px-4">
+                            Déposer une autre candidature
+                        </a>
                     </div>
                 </div>
             <?php endif; ?>
         <?php endif; ?>
 
+        <?php if (empty($candidatureResult)): ?>
         <div class="card border-0 shadow-sm p-3 p-sm-4 p-md-5 bg-white">
             <?php if (!$derniereElection): ?>
                 <!-- Cas 1 : Aucune élection n'existe -->
@@ -257,6 +264,7 @@ $maxDate = date('Y-m-d');
                 </div>
             <?php endif; ?>
         </div>
+        <?php endif; ?>
     </div>
 
     <script src="assets/js/bootstrap.bundle.min.js"></script>

@@ -240,6 +240,91 @@ class TourElectionService
     }
 
     /**
+     * Candidats validés pouvant être sélectionnés pour un tour manuel suivant.
+     * Une décision « autre » liée au tour précédent autorise une exception motivée.
+     */
+    public function getManualTourCandidateOptions(int $electionId, int $previousTourId): array
+    {
+        $previousTour = $this->getTourById($previousTourId);
+        if (!$previousTour || (int)$previousTour['election_id'] !== $electionId) {
+            return [];
+        }
+
+        $isFirstTour = (int)$previousTour['numero_tour'] === 1;
+        $sql = "
+            SELECT c.id, c.nom, c.prenoms,
+                   COALESCE(ct.statut_qualification, '') AS statut_qualification,
+                   COALESCE(scores.nb_voix, 0) AS nb_voix,
+                   CASE WHEN EXISTS (
+                       SELECT 1
+                       FROM decisions_bureau d
+                       WHERE d.election_id = c.election_id
+                         AND d.tour_id = :decision_tour_id
+                         AND d.candidat_retenu_id = c.id
+                         AND d.type_decision = 'autre'
+                   ) THEN 1 ELSE 0 END AS decision_exception
+            FROM candidats c
+            LEFT JOIN candidats_tour ct ON ct.candidat_id = c.id AND ct.tour_id = :candidate_tour_id
+            LEFT JOIN (
+                SELECT candidat_id, COUNT(*) AS nb_voix
+                FROM votes
+                WHERE election_id = :score_election_id
+                  AND (tour_id = :vote_tour_id OR (:is_first_tour = 1 AND tour_id IS NULL))
+                GROUP BY candidat_id
+            ) scores ON scores.candidat_id = c.id
+            WHERE c.election_id = :candidate_election_id
+              AND c.statut = 'validee'
+            ORDER BY c.nom ASC, c.prenoms ASC";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            ':decision_tour_id' => $previousTourId,
+            ':candidate_tour_id' => $previousTourId,
+            ':vote_tour_id' => $previousTourId,
+            ':is_first_tour' => $isFirstTour ? 1 : 0,
+            ':score_election_id' => $electionId,
+            ':candidate_election_id' => $electionId,
+        ]);
+        $candidates = $stmt->fetchAll();
+
+        $previousParticipants = array_values(array_filter(
+            $candidates,
+            static fn(array $candidate): bool => $candidate['statut_qualification'] !== ''
+        ));
+        $hasProcessedQualifications = false;
+        $maxVoix = 0;
+        $leaders = [];
+        foreach ($previousParticipants as $candidate) {
+            if ($candidate['statut_qualification'] !== 'participant') {
+                $hasProcessedQualifications = true;
+            }
+            $voix = (int)$candidate['nb_voix'];
+            if ($voix > $maxVoix) {
+                $maxVoix = $voix;
+                $leaders = [$candidate['id']];
+            } elseif ($voix === $maxVoix) {
+                $leaders[] = $candidate['id'];
+            }
+        }
+        $unprocessedTieLeaders = !$hasProcessedQualifications && count($leaders) > 1
+            ? array_fill_keys(array_map('intval', $leaders), true)
+            : [];
+
+        foreach ($candidates as &$candidate) {
+            $candidate['est_qualifie'] = (int)(
+                $candidate['statut_qualification'] === 'qualifie'
+                || (
+                    !$hasProcessedQualifications
+                    && isset($unprocessedTieLeaders[(int)$candidate['id']])
+                )
+            );
+            $candidate['decision_exception'] = (int)$candidate['decision_exception'];
+        }
+        unset($candidate);
+
+        return $candidates;
+    }
+
+    /**
      * Vérifie qu'un candidat est bien autorisé à participer au tour donné
      */
     public function isCandidateInTour(int $tourId, int $candidatId): bool
@@ -264,60 +349,409 @@ class TourElectionService
     /**
      * Met à jour les dates et le statut d'un tour et synchronise l'élection parente si c'est le tour courant
      */
-    public function updateTour(int $tourId, string $dateDebutVote, string $dateFinVote, string $statut): bool
+    public function updateTour(
+        int $tourId,
+        string $dateDebutVote,
+        string $dateFinVote,
+        string $statut,
+        ?array $candidatIds = null
+    ): bool
     {
         $tour = $this->getTourById($tourId);
-        if (!$tour) {
+        if (
+            !$tour
+            || $tour['statut'] !== 'preparation'
+            || !in_array($statut, ['preparation', 'ouverte'], true)
+            || $dateFinVote <= $dateDebutVote
+        ) {
             return false;
         }
 
-        $clotureEff = ($statut === 'cloturee')
-            ? ($tour['date_cloture_effective'] ?? date('Y-m-d H:i:s'))
-            : null;
+        $candidateIds = null;
+        if ($candidatIds !== null && (int)$tour['numero_tour'] > 1) {
+            $previousTour = $this->getTourByNumero(
+                (int)$tour['election_id'],
+                (int)$tour['numero_tour'] - 1
+            );
+            if (!$previousTour || $previousTour['statut'] !== 'cloturee') {
+                return false;
+            }
 
-        $stmt = $this->pdo->prepare("
-            UPDATE tours_election
-            SET date_debut_vote = :debut,
-                date_fin_vote = :fin,
-                statut = :statut,
-                date_cloture_effective = :cloture
-            WHERE id = :id
-        ");
-        $ok = $stmt->execute([
-            ':debut'   => $dateDebutVote,
-            ':fin'     => $dateFinVote,
-            ':statut'  => $statut,
-            ':cloture' => $clotureEff,
-            ':id'      => $tourId,
-        ]);
-
-        // Synchroniser l'élection si ce tour est le dernier / tour courant
-        $electionId = (int)$tour['election_id'];
-        $latest = $this->getActiveOrLatestTour($electionId);
-        if ($latest && (int)$latest['id'] === $tourId) {
-            $updEl = $this->pdo->prepare("
-                UPDATE elections
-                SET tour_courant = :num,
-                    date_debut_vote = :debut_v,
-                    date_fin_vote = :fin_v,
-                    date_debut = :debut_d,
-                    date_fin = :fin_d,
-                    statut = :statut,
-                    date_cloture_effective = :cloture
-                WHERE id = :eid
-            ");
-            $updEl->execute([
-                ':num'     => (int)$tour['numero_tour'],
-                ':debut_v' => $dateDebutVote,
-                ':fin_v'   => $dateFinVote,
-                ':debut_d' => $dateDebutVote,
-                ':fin_d'   => $dateFinVote,
-                ':statut'  => $statut,
-                ':cloture' => $clotureEff,
-                ':eid'     => $electionId,
-            ]);
+            $candidateIds = array_values(array_unique(array_filter(
+                array_map('intval', $candidatIds),
+                static fn(int $id): bool => $id > 0
+            )));
+            if (empty($candidateIds)) {
+                return false;
+            }
+            $optionsById = [];
+            foreach ($this->getManualTourCandidateOptions(
+                (int)$tour['election_id'],
+                (int)$previousTour['id']
+            ) as $option) {
+                $optionsById[(int)$option['id']] = $option;
+            }
+            $selectedIds = array_fill_keys($candidateIds, true);
+            foreach ($optionsById as $optionId => $option) {
+                if (!empty($option['est_qualifie']) && !isset($selectedIds[$optionId])) {
+                    return false;
+                }
+            }
+            foreach ($candidateIds as $candidateId) {
+                $option = $optionsById[$candidateId] ?? null;
+                if (
+                    !$option
+                    || (empty($option['est_qualifie']) && empty($option['decision_exception']))
+                ) {
+                    return false;
+                }
+            }
+        } elseif ($candidatIds !== null) {
+            return false;
         }
 
-        return $ok;
+        $ownTx = !$this->pdo->inTransaction();
+        if ($ownTx) {
+            $this->pdo->beginTransaction();
+        }
+
+        try {
+            $lockTour = $this->pdo->prepare('SELECT statut FROM tours_election WHERE id = :id LIMIT 1 FOR UPDATE');
+            $lockTour->execute([':id' => $tourId]);
+            if ($lockTour->fetchColumn() !== 'preparation') {
+                if ($ownTx) {
+                    $this->pdo->rollBack();
+                }
+                return false;
+            }
+
+            if ($candidateIds !== null) {
+                $stmtVotes = $this->pdo->prepare("
+                    SELECT
+                        (SELECT COUNT(*) FROM votes WHERE tour_id = :vote_tour_id) +
+                        (SELECT COUNT(*) FROM participations WHERE tour_id = :participation_tour_id AND statut = 'a_vote')
+                ");
+                $stmtVotes->execute([
+                    ':vote_tour_id' => $tourId,
+                    ':participation_tour_id' => $tourId,
+                ]);
+                if ((int)$stmtVotes->fetchColumn() > 0) {
+                    if ($ownTx) {
+                        $this->pdo->rollBack();
+                    }
+                    return false;
+                }
+            }
+
+            if ($statut === 'ouverte') {
+                $candidateCount = $this->pdo->prepare("
+                    SELECT COUNT(*)
+                    FROM candidats_tour ct
+                    JOIN candidats c ON c.id = ct.candidat_id
+                    WHERE ct.tour_id = :tour_id AND c.statut = 'validee'
+                ");
+                $candidateCount->execute([':tour_id' => $tourId]);
+                if ((int)$candidateCount->fetchColumn() === 0) {
+                    if ($ownTx) {
+                        $this->pdo->rollBack();
+                    }
+                    return false;
+                }
+
+                require_once __DIR__ . '/ElecteurTourService.php';
+                $electorService = new ElecteurTourService($this->pdo);
+                $electorService->syncElecteursForTour((int)$tour['election_id'], $tourId);
+                if ($electorService->countAuthorizedForTour((int)$tour['election_id'], $tourId) === 0) {
+                    if ($ownTx) {
+                        $this->pdo->rollBack();
+                    }
+                    return false;
+                }
+            }
+
+            $stmt = $this->pdo->prepare("
+                UPDATE tours_election
+                SET date_debut_vote = :debut,
+                    date_fin_vote = :fin,
+                    statut = :statut,
+                    date_cloture_effective = NULL
+                WHERE id = :id
+            ");
+            $ok = $stmt->execute([
+                ':debut'   => $dateDebutVote,
+                ':fin'     => $dateFinVote,
+                ':statut'  => $statut,
+                ':id'      => $tourId,
+            ]);
+
+            if ($candidateIds !== null) {
+                $deleteCandidates = $this->pdo->prepare('DELETE FROM candidats_tour WHERE tour_id = :tour_id');
+                $deleteCandidates->execute([':tour_id' => $tourId]);
+                $insertCandidate = $this->pdo->prepare("
+                    INSERT INTO candidats_tour (tour_id, election_id, candidat_id, statut_qualification)
+                    VALUES (:tour_id, :election_id, :candidate_id, 'participant')
+                ");
+                foreach ($candidateIds as $candidateId) {
+                    $insertCandidate->execute([
+                        ':tour_id' => $tourId,
+                        ':election_id' => (int)$tour['election_id'],
+                        ':candidate_id' => $candidateId,
+                    ]);
+                }
+            }
+
+            // Synchroniser l'élection si ce tour est le dernier / tour courant.
+            $electionId = (int)$tour['election_id'];
+            $latest = $this->getActiveOrLatestTour($electionId);
+            if ($latest && (int)$latest['id'] === $tourId) {
+                $updEl = $this->pdo->prepare("
+                    UPDATE elections
+                    SET tour_courant = :num,
+                        date_debut_vote = :debut_v,
+                        date_fin_vote = :fin_v,
+                        date_debut = :debut_d,
+                        date_fin = :fin_d,
+                        statut = :statut,
+                        date_cloture_effective = NULL
+                    WHERE id = :eid
+                ");
+                $updEl->execute([
+                    ':num'     => (int)$tour['numero_tour'],
+                    ':debut_v' => $dateDebutVote,
+                    ':fin_v'   => $dateFinVote,
+                    ':debut_d' => $dateDebutVote,
+                    ':fin_d'   => $dateFinVote,
+                    ':statut'  => $statut,
+                    ':eid'     => $electionId,
+                ]);
+            }
+
+            if ($ownTx) {
+                $this->pdo->commit();
+            }
+            return $ok;
+        } catch (Throwable $e) {
+            if ($ownTx && $this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            error_log('Erreur updateTour : ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Crée un tour manuel après clôture du précédent, sans modifier ses résultats.
+     */
+    public function createManualTour(
+        int $electionId,
+        int $numeroTour,
+        string $dateDebutVote,
+        string $dateFinVote,
+        array $candidatIds
+    ): array {
+        $candidateIds = array_values(array_unique(array_filter(
+            array_map('intval', $candidatIds),
+            static fn(int $id): bool => $id > 0
+        )));
+
+        if ($electionId <= 0 || $numeroTour <= 1 || empty($candidateIds)) {
+            return ['success' => false, 'message' => 'Élection, numéro du tour et candidats valides sont obligatoires.'];
+        }
+        $timezone = new DateTimeZone('Africa/Abidjan');
+        $dateDebut = DateTimeImmutable::createFromFormat('!Y-m-d H:i:s', $dateDebutVote, $timezone);
+        $dateFin = DateTimeImmutable::createFromFormat('!Y-m-d H:i:s', $dateFinVote, $timezone);
+        if (
+            !$dateDebut
+            || !$dateFin
+            || $dateDebut->format('Y-m-d H:i:s') !== $dateDebutVote
+            || $dateFin->format('Y-m-d H:i:s') !== $dateFinVote
+        ) {
+            return ['success' => false, 'message' => 'Veuillez saisir des dates valides pour l’ouverture et la clôture du tour.'];
+        }
+        if ($dateFin <= $dateDebut) {
+            return ['success' => false, 'message' => 'La date et l’heure de clôture doivent être postérieures à celles de l’ouverture.'];
+        }
+        if ($dateDebut <= new DateTimeImmutable('now', $timezone)) {
+            return ['success' => false, 'message' => 'La date et l’heure d’ouverture du nouveau tour doivent être dans le futur.'];
+        }
+
+        $ownTx = !$this->pdo->inTransaction();
+        if ($ownTx) {
+            $this->pdo->beginTransaction();
+        }
+
+        try {
+            $stmtElection = $this->pdo->prepare('SELECT * FROM elections WHERE id = :id LIMIT 1 FOR UPDATE');
+            $stmtElection->execute([':id' => $electionId]);
+            $election = $stmtElection->fetch();
+            if (!$election) {
+                if ($ownTx) {
+                    $this->pdo->rollBack();
+                }
+                return ['success' => false, 'message' => 'Élection introuvable.'];
+            }
+
+            $maxTours = max(1, (int)($election['nombre_max_tours'] ?? 3));
+            if ($numeroTour > $maxTours) {
+                if ($ownTx) {
+                    $this->pdo->rollBack();
+                }
+                return ['success' => false, 'message' => "Le nombre maximal de tours configuré ({$maxTours}) serait dépassé."];
+            }
+
+            $stmtPrevious = $this->pdo->prepare("
+                SELECT * FROM tours_election
+                WHERE election_id = :eid AND numero_tour = :numero
+                LIMIT 1 FOR UPDATE
+            ");
+            $stmtPrevious->execute([':eid' => $electionId, ':numero' => $numeroTour - 1]);
+            $previousTour = $stmtPrevious->fetch();
+            if (!$previousTour || $previousTour['statut'] !== 'cloturee') {
+                if ($ownTx) {
+                    $this->pdo->rollBack();
+                }
+                return ['success' => false, 'message' => 'Le tour précédent doit exister et être clôturé avant de créer le suivant.'];
+            }
+
+            $stmtLastTour = $this->pdo->prepare('SELECT MAX(numero_tour) FROM tours_election WHERE election_id = :eid');
+            $stmtLastTour->execute([':eid' => $electionId]);
+            if ((int)$stmtLastTour->fetchColumn() !== $numeroTour - 1) {
+                if ($ownTx) {
+                    $this->pdo->rollBack();
+                }
+                return ['success' => false, 'message' => 'Les tours doivent être créés dans l’ordre, immédiatement après le dernier tour existant.'];
+            }
+
+            if (
+                ($election['statut'] ?? '') === 'cloturee'
+                && empty($election['etat_egalite_persistante'])
+                && !empty($election['vainqueur_candidat_id'])
+            ) {
+                if ($ownTx) {
+                    $this->pdo->rollBack();
+                }
+                return ['success' => false, 'message' => 'Un scrutin clôturé avec un vainqueur ne peut pas recevoir de tour supplémentaire.'];
+            }
+            if (!empty($election['resultats_certifies'])) {
+                if ($ownTx) {
+                    $this->pdo->rollBack();
+                }
+                return ['success' => false, 'message' => 'Un scrutin certifié ne peut pas recevoir de tour supplémentaire.'];
+            }
+
+            $optionsById = [];
+            foreach ($this->getManualTourCandidateOptions($electionId, (int)$previousTour['id']) as $option) {
+                $optionsById[(int)$option['id']] = $option;
+            }
+            $selectedIds = array_fill_keys($candidateIds, true);
+            foreach ($optionsById as $optionId => $option) {
+                if (!empty($option['est_qualifie']) && !isset($selectedIds[$optionId])) {
+                    if ($ownTx) {
+                        $this->pdo->rollBack();
+                    }
+                    return [
+                        'success' => false,
+                        'message' => 'Tous les candidats qualifiés automatiquement doivent être inclus dans le tour suivant.',
+                    ];
+                }
+            }
+            foreach ($candidateIds as $candidateId) {
+                $candidate = $optionsById[$candidateId] ?? null;
+                if (!$candidate) {
+                    if ($ownTx) {
+                        $this->pdo->rollBack();
+                    }
+                    return ['success' => false, 'message' => 'Un candidat sélectionné est introuvable, non validé ou rattaché à une autre élection.'];
+                }
+                if (
+                    empty($candidate['est_qualifie'])
+                    && empty($candidate['decision_exception'])
+                ) {
+                    if ($ownTx) {
+                        $this->pdo->rollBack();
+                    }
+                    return [
+                        'success' => false,
+                        'message' => 'Un candidat non qualifié doit faire l’objet d’une décision « Autre décision statutaire » motivée, liée au tour précédent et le désignant.',
+                    ];
+                }
+            }
+
+            $libelle = $this->formatTourLabel($numeroTour);
+            $stmtInsert = $this->pdo->prepare("
+                INSERT INTO tours_election
+                    (election_id, numero_tour, libelle, date_debut_vote, date_fin_vote, statut, date_creation)
+                VALUES (:eid, :numero, :libelle, :debut, :fin, 'preparation', NOW())
+            ");
+            $stmtInsert->execute([
+                ':eid' => $electionId,
+                ':numero' => $numeroTour,
+                ':libelle' => $libelle,
+                ':debut' => $dateDebutVote,
+                ':fin' => $dateFinVote,
+            ]);
+            $tourId = (int)$this->pdo->lastInsertId();
+
+            $stmtInsertCandidate = $this->pdo->prepare("
+                INSERT INTO candidats_tour (tour_id, election_id, candidat_id, statut_qualification)
+                VALUES (:tour_id, :election_id, :candidate_id, 'participant')
+            ");
+            foreach ($candidateIds as $candidateId) {
+                $stmtInsertCandidate->execute([
+                    ':tour_id' => $tourId,
+                    ':election_id' => $electionId,
+                    ':candidate_id' => $candidateId,
+                ]);
+            }
+
+            require_once __DIR__ . '/ElecteurTourService.php';
+            (new ElecteurTourService($this->pdo))->syncElecteursForTour($electionId, $tourId);
+
+            $stmtUpdateElection = $this->pdo->prepare("
+                UPDATE elections
+                SET tour_courant = :numero,
+                    date_debut_vote = :debut_vote,
+                    date_fin_vote = :fin_vote,
+                    date_debut = :debut_election,
+                    date_fin = :fin_election,
+                    statut = 'preparation',
+                    date_cloture_effective = NULL,
+                    etat_egalite_persistante = 0,
+                    vainqueur_candidat_id = NULL,
+                    resultats_certifies = 0,
+                    date_certification = NULL
+                WHERE id = :eid
+            ");
+            $stmtUpdateElection->execute([
+                ':numero' => $numeroTour,
+                ':debut_vote' => $dateDebutVote,
+                ':fin_vote' => $dateFinVote,
+                ':debut_election' => $dateDebutVote,
+                ':fin_election' => $dateFinVote,
+                ':eid' => $electionId,
+            ]);
+
+            if ($ownTx) {
+                $this->pdo->commit();
+            }
+
+            return [
+                'success' => true,
+                'tour_id' => $tourId,
+                'message' => "Le {$libelle} a été créé en préparation. Les résultats des tours précédents sont conservés.",
+            ];
+        } catch (PDOException $e) {
+            if ($ownTx && $this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            error_log('Erreur createManualTour : ' . $e->getMessage());
+            return ['success' => false, 'message' => 'Erreur lors de la création du tour manuel.'];
+        } catch (Throwable $e) {
+            if ($ownTx && $this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            error_log('Erreur createManualTour : ' . $e->getMessage());
+            return ['success' => false, 'message' => 'Une erreur inattendue a empêché la création du tour.'];
+        }
     }
 }

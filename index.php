@@ -123,6 +123,10 @@ switch ($page) {
         (new ElectionController())->updateTour();
         break;
 
+    case 'election_create_tour':
+        (new ElectionController())->createTour();
+        break;
+
     case 'election_electeur_tour':
         (new ElectionController())->modifierElecteurTour();
         break;

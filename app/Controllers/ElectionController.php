@@ -51,7 +51,7 @@ class ElectionController
     public function index(): void
     {
         $elections = $this->electionService->getAllElectionsEnriched();
-        $derniereElection = $this->electionService->getDerniereElection();
+        $derniereElection = $elections[0] ?? null;
         $stats = $this->electionModel->getStats();
         require __DIR__ . '/../../views/elections/index.php';
     }
@@ -133,6 +133,11 @@ class ElectionController
             ? max(1, min(10, (int)$_POST['nombre_max_tours']))
             : (int)($election['nombre_max_tours'] ?? 3);
 
+        if (!empty($election['resultats_certifies']) && $statut !== 'cloturee') {
+            SessionHelper::setFlash('warning', 'Une élection certifiée ne peut pas être rouverte : son historique officiel doit rester intact.');
+            SecurityHelper::redirect('index.php?page=elections');
+        }
+
         if ($titre === '') {
             SessionHelper::setFlash('warning', 'Le titre de l\'élection est obligatoire.');
             SecurityHelper::redirect('index.php?page=elections');
@@ -152,9 +157,13 @@ class ElectionController
             'date_cloture_effective' => $election['date_cloture_effective'] ?? null
         ]);
 
-        $this->electionModel->update($id, $payload);
-
-        SessionHelper::setFlash('success', "Le calendrier et les paramètres de l'élection « {$titre} » ont été mis à jour.");
+        $updated = $this->electionModel->update($id, $payload);
+        SessionHelper::setFlash(
+            $updated ? 'success' : 'danger',
+            $updated
+                ? "Le calendrier et les paramètres de l'élection « {$titre} » ont été mis à jour."
+                : "La mise à jour de l'élection « {$titre} » a échoué."
+        );
         SecurityHelper::redirect('index.php?page=elections');
     }
 
@@ -183,6 +192,11 @@ class ElectionController
 
         if (!in_array($statut, ['preparation', 'ouverte', 'cloturee'], true)) {
             SessionHelper::setFlash('danger', 'Statut non reconnu.');
+            SecurityHelper::redirect('index.php?page=elections');
+        }
+
+        if (!empty($election['resultats_certifies']) && $statut !== 'cloturee') {
+            SessionHelper::setFlash('warning', 'Une élection certifiée ne peut pas être rouverte : son historique officiel doit rester intact.');
             SecurityHelper::redirect('index.php?page=elections');
         }
 
@@ -257,6 +271,12 @@ class ElectionController
         $dateDebut = $this->electionService->normalizeDateTime($_POST['date_debut_vote'] ?? null);
         $dateFin   = $this->electionService->normalizeDateTime($_POST['date_fin_vote'] ?? null);
 
+        $tour = $this->tourService->getTourById($tourId);
+        if (!$tour || (int)$tour['election_id'] !== $electionId) {
+            SessionHelper::setFlash('danger', 'Tour de scrutin introuvable pour cette élection.');
+            SecurityHelper::redirect('index.php?page=election_details&id=' . SecurityHelper::encryptId($electionId));
+        }
+
         if (!$dateDebut || !$dateFin || $dateFin <= $dateDebut) {
             SessionHelper::setFlash('warning', 'Les dates de début et de fin du tour doivent être valides et la fin doit être postérieure au début.');
             SecurityHelper::redirect('index.php?page=election_details&id=' . SecurityHelper::encryptId($electionId));
@@ -266,11 +286,76 @@ class ElectionController
             $res = $this->qualificationService->cloturerTourEtQualifier($electionId, $tourId);
             SessionHelper::setFlash($res['success'] ? 'info' : 'danger', $res['message']);
         } else {
-            $this->tourService->updateTour($tourId, $dateDebut, $dateFin, $statut);
-            SessionHelper::setFlash('success', 'Les paramètres et horaires du tour ont été mis à jour.');
+            $candidateIds = isset($_POST['candidat_ids']) && is_array($_POST['candidat_ids'])
+                ? $_POST['candidat_ids']
+                : null;
+            $updated = $this->tourService->updateTour(
+                $tourId,
+                $dateDebut,
+                $dateFin,
+                $statut,
+                $candidateIds
+            );
+            SessionHelper::setFlash(
+                $updated ? 'success' : 'warning',
+                $updated
+                    ? 'Les paramètres et horaires du tour ont été mis à jour.'
+                    : 'Le tour n’a pas été modifié. Vérifiez qu’il est en préparation, que tous les candidats qualifiés sont sélectionnés et qu’au moins un électeur est autorisé avant son ouverture.'
+            );
         }
 
         SecurityHelper::redirect('index.php?page=election_details&id=' . SecurityHelper::encryptId($electionId));
+    }
+
+    /**
+     * Création manuelle d'un tour suivant dans une élection existante.
+     */
+    public function createTour(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            SecurityHelper::redirect('index.php?page=elections');
+        }
+
+        if (!SessionHelper::verifyCsrf($_POST['csrf_token'] ?? '')) {
+            SessionHelper::setFlash('danger', 'Jeton CSRF invalide.');
+            SecurityHelper::redirect('index.php?page=elections');
+        }
+
+        $electionId = (int)($_POST['election_id'] ?? 0);
+        $election = $this->electionService->getElectionById($electionId);
+        if (!$election) {
+            SessionHelper::setFlash('danger', 'Élection introuvable.');
+            SecurityHelper::redirect('index.php?page=elections');
+        }
+
+        $dateDebut = $this->electionService->normalizeDateTime($_POST['date_debut_vote'] ?? null);
+        $dateFin = $this->electionService->normalizeDateTime($_POST['date_fin_vote'] ?? null);
+        if (!$dateDebut || !$dateFin) {
+            SessionHelper::setFlash('warning', 'Veuillez saisir des dates valides pour l’ouverture et la clôture du tour.');
+            SecurityHelper::redirect('index.php?page=election_details&id=' . SecurityHelper::encryptId($electionId) . '#section-tours');
+        }
+        if ($dateFin <= $dateDebut) {
+            SessionHelper::setFlash('warning', 'La date et l’heure de clôture doivent être postérieures à celles de l’ouverture.');
+            SecurityHelper::redirect('index.php?page=election_details&id=' . SecurityHelper::encryptId($electionId) . '#section-tours');
+        }
+        if ($dateDebut <= $this->electionService->getNow()) {
+            SessionHelper::setFlash('warning', 'La date et l’heure d’ouverture du nouveau tour doivent être dans le futur.');
+            SecurityHelper::redirect('index.php?page=election_details&id=' . SecurityHelper::encryptId($electionId) . '#section-tours');
+        }
+
+        $candidateIds = is_array($_POST['candidat_ids'] ?? null)
+            ? $_POST['candidat_ids']
+            : [];
+        $res = $this->tourService->createManualTour(
+            $electionId,
+            (int)($_POST['numero_tour'] ?? 0),
+            $dateDebut,
+            $dateFin,
+            $candidateIds
+        );
+
+        SessionHelper::setFlash($res['success'] ? 'success' : 'danger', $res['message']);
+        SecurityHelper::redirect('index.php?page=election_details&id=' . SecurityHelper::encryptId($electionId) . '#section-tours');
     }
 
     /**
@@ -420,6 +505,42 @@ class ElectionController
         }
 
         $tours = $this->tourService->getToursByElection($id);
+        $previousTourForManual = !empty($tours) ? $tours[count($tours) - 1] : null;
+        $nextTourNumber = $previousTourForManual ? (int)$previousTourForManual['numero_tour'] + 1 : 2;
+        $nextTour = null;
+        foreach ($tours as $tour) {
+            if ((int)$tour['numero_tour'] === $nextTourNumber) {
+                $nextTour = $tour;
+                break;
+            }
+        }
+        $manualTourCandidateOptions = $previousTourForManual
+            ? $this->tourService->getManualTourCandidateOptions($id, (int)$previousTourForManual['id'])
+            : [];
+        $hasSelectableManualCandidate = false;
+        foreach ($manualTourCandidateOptions as $candidateOption) {
+            if (!empty($candidateOption['est_qualifie']) || !empty($candidateOption['decision_exception'])) {
+                $hasSelectableManualCandidate = true;
+                break;
+            }
+        }
+        $nextTourCandidateIds = [];
+        if ($nextTour) {
+            foreach ($this->tourService->getCandidatesForTour($id, (int)$nextTour['id']) as $nextCandidate) {
+                $nextTourCandidateIds[] = (int)$nextCandidate['id'];
+            }
+        }
+        $canCreateManualTour = $previousTourForManual
+            && $previousTourForManual['statut'] === 'cloturee'
+            && !$nextTour
+            && $hasSelectableManualCandidate
+            && $nextTourNumber <= (int)($election['nombre_max_tours'] ?? 3)
+            && empty($election['resultats_certifies'])
+            && (
+                ($election['statut'] ?? '') !== 'cloturee'
+                || !empty($election['etat_egalite_persistante'])
+                || empty($election['vainqueur_candidat_id'])
+            );
         $selectedTourId = !empty($_GET['tour_id']) ? (int)$_GET['tour_id'] : null;
         $activeTour = null;
         if ($selectedTourId) {

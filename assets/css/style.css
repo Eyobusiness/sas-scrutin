@@ -1424,6 +1424,61 @@ html, body {
   box-shadow: 0 20px 45px rgba(15, 23, 42, 0.12);
 }
 
+.tour-config-modal .modal-dialog {
+  max-width: 680px;
+}
+
+.tour-config-modal .modal-content {
+  overflow: hidden;
+  border: 0;
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.2);
+}
+
+.tour-config-modal .modal-header {
+  padding: 1.25rem 1.5rem;
+  background: linear-gradient(135deg, #eff6ff, #fff);
+}
+
+.tour-config-modal .modal-title {
+  color: var(--admin-text);
+}
+
+.tour-config-modal .modal-body {
+  padding: 1.5rem;
+}
+
+.tour-config-modal .form-label {
+  color: var(--admin-text-secondary);
+}
+
+.tour-config-modal .form-control,
+.tour-config-modal .form-select {
+  min-height: 44px;
+  border-radius: 8px;
+}
+
+.tour-config-modal .modal-footer {
+  padding: 1rem 1.5rem;
+  background: var(--admin-bg);
+}
+
+.tour-candidate-list {
+  max-height: 220px;
+  overflow-y: auto;
+  border-color: var(--admin-border) !important;
+  background: var(--admin-bg);
+}
+
+.tour-candidate-list .form-check {
+  padding: 0.45rem 0.6rem 0.45rem 1.85rem;
+  border-radius: 6px;
+}
+
+.tour-candidate-list .form-check:hover {
+  background: var(--admin-surface-soft);
+}
+
 .modal-header,
 .modal-footer {
   border-color: var(--admin-border-subtle);
@@ -1790,6 +1845,5 @@ html, body {
    Les styles spécifiques de la page des résultats sont isolés dans :
    assets/css/results.css
    ========================================================================== */
-
 
 

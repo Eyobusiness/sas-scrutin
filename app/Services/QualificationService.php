@@ -239,12 +239,9 @@ class QualificationService
                     $nextTourId = (int)$this->pdo->lastInsertId();
                 }
 
-                // Inscrire uniquement les candidats qualifiés dans candidats_tour pour le nouveau tour
-                $delNextCt = $this->pdo->prepare("DELETE FROM candidats_tour WHERE tour_id = :ntid");
-                $delNextCt->execute([':ntid' => $nextTourId]);
-
+                // Preserve a manually composed draft tour and add any automatically qualified candidates.
                 $insNextCt = $this->pdo->prepare("
-                    INSERT INTO candidats_tour (tour_id, election_id, candidat_id, statut_qualification)
+                    INSERT IGNORE INTO candidats_tour (tour_id, election_id, candidat_id, statut_qualification)
                     VALUES (:ntid, :eid, :cid, 'participant')
                 ");
                 foreach ($leaders as $q) {
@@ -374,6 +371,43 @@ class QualificationService
             ];
         }
 
+        $typeDecision = in_array($typeDecision, ['egalite_persistante', 'proclamation_vainqueur', 'autre'], true)
+            ? $typeDecision
+            : 'egalite_persistante';
+
+        $stmtElection = $this->pdo->prepare('SELECT id FROM elections WHERE id = :id LIMIT 1');
+        $stmtElection->execute([':id' => $electionId]);
+        if (!$stmtElection->fetchColumn()) {
+            return ['success' => false, 'message' => 'Élection introuvable.'];
+        }
+
+        if ($tourId !== null) {
+            $stmtTour = $this->pdo->prepare('SELECT election_id FROM tours_election WHERE id = :id LIMIT 1');
+            $stmtTour->execute([':id' => $tourId]);
+            if ((int)$stmtTour->fetchColumn() !== $electionId) {
+                return ['success' => false, 'message' => 'Le tour sélectionné ne correspond pas à cette élection.'];
+            }
+        }
+
+        if ($candidatRetenuId !== null && $candidatRetenuId > 0) {
+            $stmtCandidate = $this->pdo->prepare("
+                SELECT id, statut FROM candidats
+                WHERE id = :candidate_id AND election_id = :election_id
+                LIMIT 1
+            ");
+            $stmtCandidate->execute([
+                ':candidate_id' => $candidatRetenuId,
+                ':election_id' => $electionId,
+            ]);
+            $candidate = $stmtCandidate->fetch();
+            if (!$candidate) {
+                return ['success' => false, 'message' => 'Le candidat sélectionné ne correspond pas à cette élection.'];
+            }
+            if ($typeDecision === 'autre' && $candidate['statut'] !== 'validee') {
+                return ['success' => false, 'message' => 'Une décision exceptionnelle de participation ne peut concerner qu’un candidat validé.'];
+            }
+        }
+
         $ownTx = !$this->pdo->inTransaction();
         if ($ownTx) {
             $this->pdo->beginTransaction();
@@ -389,14 +423,18 @@ class QualificationService
             $stmt->execute([
                 ':eid'      => $electionId,
                 ':tid'      => $tourId,
-                ':type'     => in_array($typeDecision, ['egalite_persistante', 'proclamation_vainqueur', 'autre'], true) ? $typeDecision : 'egalite_persistante',
+                ':type'     => $typeDecision,
                 ':cid'      => ($candidatRetenuId && $candidatRetenuId > 0) ? $candidatRetenuId : null,
                 ':decision' => $decisionClean,
                 ':motif'    => $motifClean,
                 ':aid'      => $adminId,
             ]);
 
-            if ($candidatRetenuId && $candidatRetenuId > 0) {
+            if (
+                $candidatRetenuId
+                && $candidatRetenuId > 0
+                && $typeDecision !== 'autre'
+            ) {
                 $updEl = $this->pdo->prepare("
                     UPDATE elections
                     SET vainqueur_candidat_id = :cid,

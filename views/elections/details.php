@@ -334,7 +334,14 @@ include __DIR__ . '/../layout/head.php';
                 &bull; Tour actif : <strong>Tour <?= (int)($election['tour_courant'] ?? 1) ?></strong>
             </small>
         </div>
-        <span class="badge bg-primary-subtle text-primary"><?= count($tours) ?> tour(s) créé(s)</span>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-primary-subtle text-primary"><?= count($tours) ?> tour(s) créé(s)</span>
+            <?php if ($canCreateManualTour): ?>
+                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalCreateManualTour">
+                    <i class="bi bi-plus-circle me-1"></i> Créer un tour
+                </button>
+            <?php endif; ?>
+        </div>
     </div>
     <div class="card-body">
         <?php if (!empty($election['etat_egalite_persistante'])): ?>
@@ -395,6 +402,8 @@ include __DIR__ . '/../layout/head.php';
                                         <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalUpdateTour<?= (int)$t['id'] ?>">
                                             <i class="bi bi-calendar-check"></i> Dates / Ouvrir
                                         </button>
+                                    <?php endif; ?>
+                                    <?php if ($t['statut'] !== 'cloturee'): ?>
                                         <form method="post" action="index.php?page=election_cloturer_tour" class="d-inline" onsubmit="return confirm('Confirmez-vous la clôture de ce tour et le calcul automatique des qualifications ?');">
                                             <?= SessionHelper::csrfField() ?>
                                             <input type="hidden" name="election_id" value="<?= (int)$election['id'] ?>">
@@ -408,47 +417,153 @@ include __DIR__ . '/../layout/head.php';
                             </td>
                         </tr>
 
-                        <!-- Modal configuration/ouverture du tour -->
-                        <div class="modal fade" id="modalUpdateTour<?= (int)$t['id'] ?>" tabindex="-1" aria-hidden="true">
-                            <div class="modal-dialog">
-                                <form method="post" action="index.php?page=election_update_tour" class="modal-content">
-                                    <?= SessionHelper::csrfField() ?>
-                                    <input type="hidden" name="election_id" value="<?= (int)$election['id'] ?>">
-                                    <input type="hidden" name="tour_id" value="<?= (int)$t['id'] ?>">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title fw-bold">Configurer / Ouvrir le <?= SecurityHelper::e($t['libelle'] ?? ('Tour ' . $t['numero_tour'])) ?></h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        <div class="mb-3">
-                                            <label class="form-label small fw-bold">Date et heure d'ouverture du vote <span class="text-danger">*</span></label>
-                                            <input type="datetime-local" name="date_debut_vote" class="form-control" value="<?= date('Y-m-d\TH:i', strtotime($t['date_debut_vote'])) ?>" required>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label small fw-bold">Date et heure de fermeture du vote <span class="text-danger">*</span></label>
-                                            <input type="datetime-local" name="date_fin_vote" class="form-control" value="<?= date('Y-m-d\TH:i', strtotime($t['date_fin_vote'])) ?>" required>
-                                        </div>
-                                        <div class="mb-2">
-                                            <label class="form-label small fw-bold">Statut du tour</label>
-                                            <select name="statut" class="form-select">
-                                                <option value="preparation" <?= $t['statut'] === 'preparation' ? 'selected' : '' ?>>En préparation (liste électorale modifiable)</option>
-                                                <option value="ouverte" <?= $t['statut'] === 'ouverte' ? 'selected' : '' ?>>Ouvert au vote (verrouille la liste électorale du tour)</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
-                                        <button type="submit" class="btn btn-primary">Enregistrer</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
                     <?php endforeach; ?>
                 </tbody>
             </table>
         </div>
     </div>
 </div>
+
+<?php foreach ($tours as $t): ?>
+    <!-- Modal configuration/ouverture du tour -->
+    <div class="modal fade tour-config-modal" id="modalUpdateTour<?= (int)$t['id'] ?>" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <form method="post" action="index.php?page=election_update_tour" class="modal-content">
+                <?= SessionHelper::csrfField() ?>
+                <input type="hidden" name="election_id" value="<?= (int)$election['id'] ?>">
+                <input type="hidden" name="tour_id" value="<?= (int)$t['id'] ?>">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Configurer / Ouvrir le <?= SecurityHelper::e($t['libelle'] ?? ('Tour ' . $t['numero_tour'])) ?></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Date et heure d'ouverture du vote <span class="text-danger">*</span></label>
+                        <input type="datetime-local" name="date_debut_vote" class="form-control" value="<?= date('Y-m-d\TH:i', strtotime($t['date_debut_vote'])) ?>" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Date et heure de fermeture du vote <span class="text-danger">*</span></label>
+                        <input type="datetime-local" name="date_fin_vote" class="form-control" value="<?= date('Y-m-d\TH:i', strtotime($t['date_fin_vote'])) ?>" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold">Statut du tour</label>
+                        <select name="statut" class="form-select">
+                            <option value="preparation" <?= $t['statut'] === 'preparation' ? 'selected' : '' ?>>En préparation (liste électorale modifiable)</option>
+                            <option value="ouverte" <?= $t['statut'] === 'ouverte' ? 'selected' : '' ?>>Ouvert au vote (verrouille la liste électorale du tour)</option>
+                        </select>
+                    </div>
+                    <?php if ($nextTour && (int)$t['id'] === (int)$nextTour['id']): ?>
+                        <div class="mb-2">
+                            <label class="form-label small fw-bold">Candidats du tour</label>
+                            <div class="tour-candidate-list border rounded p-2">
+                                <?php foreach ($manualTourCandidateOptions as $option): ?>
+                                    <?php
+                                    $isSelectable = !empty($option['est_qualifie']) || !empty($option['decision_exception']);
+                                    $isSelected = in_array((int)$option['id'], $nextTourCandidateIds, true) || !empty($option['est_qualifie']);
+                                    ?>
+                                    <label class="form-check d-flex align-items-center gap-2 mb-1">
+                                        <input class="form-check-input mt-0" type="checkbox" name="candidat_ids[]"
+                                            value="<?= (int)$option['id'] ?>"
+                                            <?= $isSelected ? 'checked' : '' ?>
+                                            <?= $isSelectable ? '' : 'disabled' ?>>
+                                        <span class="small">
+                                            <?= SecurityHelper::e($option['prenoms'] . ' ' . $option['nom']) ?>
+                                            <?php if (!empty($option['est_qualifie'])): ?>
+                                                <span class="badge bg-success-subtle text-success">Qualifié</span>
+                                            <?php elseif (!empty($option['decision_exception'])): ?>
+                                                <span class="badge bg-warning-subtle text-dark">Décision du bureau</span>
+                                            <?php else: ?>
+                                                <span class="badge bg-light text-muted">Non qualifié</span>
+                                            <?php endif; ?>
+                                        </span>
+                                    </label>
+                                <?php endforeach; ?>
+                            </div>
+                            <small class="text-muted">Les candidats non qualifiés ne sont sélectionnables qu’après une décision motivée de type « Autre » liée au tour précédent.</small>
+                        </div>
+                    <?php endif; ?>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+<?php endforeach; ?>
+
+<?php if ($canCreateManualTour): ?>
+    <?php
+    $previousTourEndTimestamp = strtotime($previousTourForManual['date_fin_vote'] ?? 'now');
+    $manualStartTimestamp = max($previousTourEndTimestamp ?: 0, time()) + 3600;
+    $manualStartDefault = date('Y-m-d\TH:i', $manualStartTimestamp);
+    $manualEndDefault = date('Y-m-d\TH:i', $manualStartTimestamp + 86400);
+    ?>
+    <div class="modal fade" id="modalCreateManualTour" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <form method="post" action="index.php?page=election_create_tour" class="modal-content">
+                <?= SessionHelper::csrfField() ?>
+                <input type="hidden" name="election_id" value="<?= (int)$election['id'] ?>">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Créer manuellement un tour de scrutin</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Numéro du tour</label>
+                            <input type="number" name="numero_tour" class="form-control" min="<?= (int)$nextTourNumber ?>"
+                                max="<?= (int)($election['nombre_max_tours'] ?? 3) ?>" value="<?= (int)$nextTourNumber ?>" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Ouverture du vote</label>
+                            <input type="datetime-local" name="date_debut_vote" class="form-control" value="<?= $manualStartDefault ?>" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Clôture du vote</label>
+                            <input type="datetime-local" name="date_fin_vote" class="form-control" value="<?= $manualEndDefault ?>" required>
+                        </div>
+                    </div>
+                    <small class="text-muted d-block mt-2">L’ouverture doit être programmée dans le futur et la clôture après l’ouverture.</small>
+                    <div class="mt-3">
+                        <label class="form-label small fw-bold">Candidats participants</label>
+                        <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto;">
+                            <?php foreach ($manualTourCandidateOptions as $option): ?>
+                                <?php $isSelectable = !empty($option['est_qualifie']) || !empty($option['decision_exception']); ?>
+                                <label class="form-check d-flex align-items-center gap-2 mb-2">
+                                    <input class="form-check-input mt-0" type="checkbox" name="candidat_ids[]"
+                                        value="<?= (int)$option['id'] ?>" <?= !empty($option['est_qualifie']) ? 'checked' : '' ?>
+                                        <?= $isSelectable ? '' : 'disabled' ?>>
+                                    <span class="small">
+                                        <?= SecurityHelper::e($option['prenoms'] . ' ' . $option['nom']) ?>
+                                        <?php if (!empty($option['est_qualifie'])): ?>
+                                            <span class="badge bg-success-subtle text-success">Qualifié</span>
+                                        <?php elseif (!empty($option['decision_exception'])): ?>
+                                            <span class="badge bg-warning-subtle text-dark">Décision du bureau</span>
+                                        <?php else: ?>
+                                            <span class="badge bg-light text-muted">Non qualifié</span>
+                                        <?php endif; ?>
+                                    </span>
+                                </label>
+                            <?php endforeach; ?>
+                            <?php if (empty($manualTourCandidateOptions)): ?>
+                                <p class="small text-muted mb-0">Aucun candidat validé disponible.</p>
+                            <?php endif; ?>
+                        </div>
+                        <small class="text-muted">Tous les candidats qualifiés du tour précédent doivent être inclus. Toute exception exige une décision motivée de type « Autre » désignant le candidat.</small>
+                    </div>
+                    <div class="alert alert-info small mt-3 mb-0">
+                        Le nouveau tour sera rattaché à cette élection et enregistré en préparation. La liste des électeurs sera initialisée sans modifier les tours précédents.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Créer le tour en préparation</button>
+                </div>
+            </form>
+        </div>
+    </div>
+<?php endif; ?>
 
 <!-- ======================================================================= -->
 <!-- SECTION 4 & 14 : DÉCISION OFFICIELLE DU BUREAU (ÉGALITÉ PERSISTANTE)    -->
@@ -499,6 +614,7 @@ include __DIR__ . '/../layout/head.php';
                     </button>
                 </div>
             </div>
+            <small class="text-muted d-block mt-2">Pour autoriser un candidat non qualifié à participer au tour suivant, choisissez « Autre décision statutaire », désignez ce candidat et indiquez explicitement l’autorisation dans la décision et son motif.</small>
         </form>
 
         <?php if (!empty($decisionsBureau)): ?>

@@ -35,7 +35,8 @@ class DashboardController
 
     public function index(): void
     {
-        $derniereElection = $this->electionService->getDerniereElection();
+        $recentElections = $this->electionService->getAllElectionsEnriched();
+        $derniereElection = $recentElections[0] ?? null;
         $membreStats = $this->membreModel->getStats();
         $electionStats = $this->electionModel->getStats();
         $candidatStats = $this->candidatModel->getStats();
@@ -53,7 +54,6 @@ class DashboardController
             ];
         }
 
-        $recentElections = $this->electionService->getAllElectionsEnriched();
         $recentElections = array_slice($recentElections, 0, 5);
 
         require __DIR__ . '/../../views/dashboard/index.php';

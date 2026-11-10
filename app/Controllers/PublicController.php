@@ -61,6 +61,8 @@ class PublicController
      */
     public function home(): void
     {
+        unset($_SESSION['inscription_result']);
+        unset($_SESSION['candidature_result']);
         $derniereElection = $this->electionService->getDerniereElection();
         $phaseInfo = $derniereElection['phase_info'] ?? null;
         $activeElection = ($derniereElection && !empty($phaseInfo['vote_open'])) ? $derniereElection : null;
@@ -75,6 +77,12 @@ class PublicController
      */
     public function inscription(): void
     {
+        unset($_SESSION['candidature_result']);
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST' && isset($_GET['nouveau'])) {
+            unset($_SESSION['inscription_result']);
+        }
+
         $derniereElection = $this->electionService->getDerniereElection();
         $registrationStatus = $this->electionService->canRegisterMember($derniereElection);
         $inscriptionsOuvertes = $registrationStatus['allowed'];
@@ -82,6 +90,8 @@ class PublicController
         $electorConditions = $this->parametreService->getElectorConditions();
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            unset($_SESSION['inscription_result']);
+
             if (!SessionHelper::verifyCsrf($_POST['csrf_token'] ?? '')) {
                 SessionHelper::setFlash('danger', 'Jeton CSRF invalide.');
                 SecurityHelper::redirect('index.php?page=inscription');
@@ -170,7 +180,6 @@ class PublicController
         }
 
         $inscriptionResult = $_SESSION['inscription_result'] ?? null;
-        unset($_SESSION['inscription_result']);
 
         require __DIR__ . '/../../views/public/inscription.php';
     }
@@ -182,6 +191,10 @@ class PublicController
      */
     public function candidater(): void
     {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST' && isset($_GET['nouveau'])) {
+            unset($_SESSION['candidature_result']);
+        }
+
         $derniereElection = $this->electionService->getDerniereElection();
         $candidatureStatus = $this->electionService->canSubmitCandidature($derniereElection);
         $candidaturesOuvertes = $candidatureStatus['allowed'];
@@ -190,6 +203,8 @@ class PublicController
         $candidatureConditions = $this->parametreService->getCandidatureConditions();
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            unset($_SESSION['candidature_result']);
+
             if (!SessionHelper::verifyCsrf($_POST['csrf_token'] ?? '')) {
                 SessionHelper::setFlash('danger', 'Jeton CSRF invalide.');
                 SecurityHelper::redirect('index.php?page=candidater');
@@ -291,9 +306,8 @@ class PublicController
 
             SecurityHelper::redirect('index.php?page=candidater');
         }
-
         $candidatureResult = $_SESSION['candidature_result'] ?? null;
-        unset($_SESSION['candidature_result']);
+        $candidatureResult = $_SESSION['candidature_result'] ?? null;
 
         require __DIR__ . '/../../views/public/candidater.php';
     }
@@ -306,6 +320,9 @@ class PublicController
      */
     public function voter(): void
     {
+        unset($_SESSION['inscription_result']);
+        unset($_SESSION['candidature_result']);
+
         // Utiliser exclusivement le dernier scrutin enregistré comme scrutin de référence
         $election = $this->electionService->getDerniereElection();
 
@@ -419,9 +436,10 @@ class PublicController
         $currentElection = $derniereElection;
         $phaseInfo = $derniereElection['phase_info'] ?? null;
         $isCloturee = $phaseInfo ? (bool)$phaseInfo['is_closed'] : false;
+        $resultatsPublics = $phaseInfo ? (bool)($phaseInfo['resultats_publics'] ?? false) : false;
         $donnees = null;
 
-        if ($derniereElection && $isCloturee) {
+        if ($derniereElection && $resultatsPublics) {
             $requestedTourId = !empty($_GET['tour_id']) ? (int)$_GET['tour_id'] : null;
             $donnees = $this->resultatService->getResultats((int)$derniereElection['id'], $requestedTourId);
         }

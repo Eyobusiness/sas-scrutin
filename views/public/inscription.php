@@ -112,6 +112,9 @@ $maxDate = date('Y-m-d');
                         <a href="index.php?page=home" class="btn btn-outline-secondary px-4">
                             <i class="bi bi-house me-1"></i> Retour à l'accueil
                         </a>
+                        <a href="index.php?page=inscription&amp;nouveau=1" class="btn btn-outline-primary px-4">
+                            Inscrire un autre membre
+                        </a>
                     </div>
                 </div>
             <?php else: ?>
@@ -158,11 +161,15 @@ $maxDate = date('Y-m-d');
                         <a href="index.php?page=home" class="btn btn-primary px-4">
                             <i class="bi bi-house me-1"></i> Retour à l'accueil
                         </a>
+                        <a href="index.php?page=inscription&amp;nouveau=1" class="btn btn-outline-primary px-4">
+                            Inscrire un autre membre
+                        </a>
                     </div>
                 </div>
             <?php endif; ?>
         <?php endif; ?>
 
+        <?php if (empty($inscriptionResult)): ?>
         <div class="card border-0 shadow-sm p-3 p-sm-4 p-md-5 bg-white">
             <?php if (!$inscriptionsOuvertes): ?>
                 <!-- Verrouillage automatique des inscriptions -->
@@ -242,6 +249,7 @@ $maxDate = date('Y-m-d');
                 </a>
             </div>
         </div>
+        <?php endif; ?>
     </div>
 
     <script src="assets/js/bootstrap.bundle.min.js"></script>

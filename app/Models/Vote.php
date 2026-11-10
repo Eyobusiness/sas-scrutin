@@ -47,7 +47,7 @@ class Vote extends BaseModel
 
             $electionModel = new Election($this->pdo);
             $election = $electionModel->normalizeRow($election);
-            $now = date('Y-m-d H:i:s');
+            $now = (new DateTimeImmutable('now', new DateTimeZone('Africa/Abidjan')))->format('Y-m-d H:i:s');
             $dateFinVote = $election['date_fin_vote'] ?? ($election['date_fin'] ?? null);
 
             if (($election['statut'] ?? '') !== 'cloturee' && !empty($dateFinVote) && $now >= $dateFinVote) {
@@ -70,6 +70,19 @@ class Vote extends BaseModel
             }
             $activeTourId = (int)$tour['id'];
             $numeroTour = (int)$tour['numero_tour'];
+            $now = (new DateTimeImmutable('now', new DateTimeZone('Africa/Abidjan')))->format('Y-m-d H:i:s');
+            $tourStart = $tour['date_debut_vote'] ?? null;
+            $tourEnd = $tour['date_fin_vote'] ?? null;
+            if (
+                ($tour['statut'] ?? '') !== 'ouverte'
+                || empty($tourStart)
+                || empty($tourEnd)
+                || $now < $tourStart
+                || $now >= $tourEnd
+            ) {
+                $this->pdo->rollBack();
+                return [false, 'Ce tour n’est pas actuellement ouvert au vote.'];
+            }
 
             // 3. Vérification du candidat : doit exister, appartenir à cette élection, avoir le statut 'validee'
             // ET être qualifié/participant pour ce tour !
@@ -131,7 +144,7 @@ class Vote extends BaseModel
                 return [false, "Vous avez déjà voté. Merci de patienter pour les résultats."];
             }
 
-            $currentDatetime = date('Y-m-d H:i:s');
+            $currentDatetime = $now;
 
             // 6. Insérer dans la table votes (ANONYME : AUCUN identifiant du membre n'est stocké ici)
             $stmt = $this->pdo->prepare("

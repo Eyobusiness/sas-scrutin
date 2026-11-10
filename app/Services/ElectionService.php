@@ -472,7 +472,7 @@ class ElectionService
         $statut        = $election['statut'] ?? 'preparation';
         $certifies     = !empty($election['resultats_certifies']);
 
-        $isClosed = ($statut === 'cloturee') || (!empty($dateFinVote) && $now >= $dateFinVote);
+        $isClosed = ($statut === 'cloturee');
         $voteStarted = $isClosed || (!empty($dateDebutVote) && $now >= $dateDebutVote && $statut === 'ouverte');
 
         $insOpen  = !$isClosed && (empty($dateDebutVote) || $now < $dateDebutVote)
@@ -486,8 +486,11 @@ class ElectionService
             && $this->isIntervalOpen($dateDebutVote, $dateFinVote, $now);
 
         // Détermination du code de phase principale et du cas d'affichage public (Cas 1 à 5 de la Section 8)
+        $egalitePersistante = !empty($election['etat_egalite_persistante']);
+        $resultatsPublics = $isClosed && ($certifies || $egalitePersistante);
+
         if ($isClosed) {
-            $currentCode = $certifies ? self::PHASE_PUBLICATION_RESULTATS : self::PHASE_CLOTURE;
+            $currentCode = $resultatsPublics ? self::PHASE_PUBLICATION_RESULTATS : self::PHASE_CLOTURE;
             $publicCase  = 5;
         } elseif ($voteOpen) {
             $currentCode = self::PHASE_VOTE;
@@ -581,7 +584,7 @@ class ElectionService
                 'icon'       => 'bi-lock',
                 'date_debut' => $election['date_cloture_effective'] ?? $dateFinVote,
                 'date_fin'   => null,
-                'etat'       => $isClosed ? ($certifies ? 'terminee' : 'en_cours') : 'a_venir',
+                'etat'       => $isClosed ? 'terminee' : 'a_venir',
             ],
             self::PHASE_PUBLICATION_RESULTATS => [
                 'numero'     => 7,
@@ -590,7 +593,7 @@ class ElectionService
                 'icon'       => 'bi-trophy',
                 'date_debut' => $election['date_certification'] ?? ($election['date_cloture_effective'] ?? $dateFinVote),
                 'date_fin'   => null,
-                'etat'       => $isClosed ? 'en_cours' : 'a_venir',
+                'etat'       => $resultatsPublics ? 'terminee' : 'a_venir',
             ],
         ];
 
@@ -619,7 +622,7 @@ class ElectionService
             'campagne_terminee'        => $campagneTerminee,
             'scrutin_ouvert'           => $voteOpen,
             'vote_cloture'             => $isClosed,
-            'resultats_publics'        => $isClosed,
+            'resultats_publics'        => $resultatsPublics,
             'resultats_certifies'      => $certifies,
         ];
 
@@ -630,6 +633,7 @@ class ElectionService
             'public_case'        => $publicCase,
             'now'                => $now,
             'is_closed'          => $isClosed,
+            'resultats_publics'  => $resultatsPublics,
             'ins_open'           => $insOpen,
             'cand_open'          => $candOpen,
             'camp_open'          => $campOpen,
@@ -641,4 +645,3 @@ class ElectionService
         ];
     }
 }
-

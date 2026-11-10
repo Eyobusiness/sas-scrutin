@@ -16,6 +16,7 @@ class CandidatureService
     private EligibilityService $eligibilityService;
     private ElectionService $electionService;
     private Candidat $candidatModel;
+    private ?array $candidatureConditionsCache = null;
 
     public function __construct(?PDO $pdo = null)
     {
@@ -102,7 +103,8 @@ class CandidatureService
      */
     public function evaluateCandidature(?string $dateNaissance, ?int $anciennete, bool $droitPaye): array
     {
-        $conditions = $this->parametreService->getCandidatureConditions();
+        $conditions = $this->candidatureConditionsCache
+            ??= $this->parametreService->getCandidatureConditions();
         $age = $this->eligibilityService->calculateAge($dateNaissance);
 
         $motifs = [];
@@ -191,4 +193,3 @@ class CandidatureService
         return $candidat;
     }
 }
-

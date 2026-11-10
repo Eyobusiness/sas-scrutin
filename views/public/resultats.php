@@ -11,6 +11,7 @@ if ($currentElection && empty($phaseInfo)) {
     $phaseInfo = $currentElection['phase_info'] ?? (new ElectionService())->getCurrentPhase($currentElection);
 }
 $isCloturee = $isCloturee ?? (!empty($phaseInfo['is_closed']));
+$resultatsPublics = $resultatsPublics ?? (!empty($phaseInfo['resultats_publics']));
 $publicCase = $isCloturee ? 5 : (int)($phaseInfo['public_case'] ?? 1);
 ?>
 <!DOCTYPE html>
@@ -1451,22 +1452,42 @@ $publicCase = $isCloturee ? 5 : (int)($phaseInfo['public_case'] ?? 1);
                                 <?= SecurityHelper::e($phaseInfo['label']) ?>
                             </span>
                         <?php endif; ?>
-                        <?php if ($isCloturee): ?>
+                        <?php if ($resultatsPublics): ?>
                             <?php if (!empty($currentElection['resultats_certifies'])): ?>
                                 <span class="badge bg-success px-3 py-2">
                                     <i class="bi bi-patch-check-fill me-1"></i> Résultats officiels certifiés
                                 </span>
+                            <?php elseif (!empty($currentElection['etat_egalite_persistante'])): ?>
+                                <span class="badge bg-warning text-dark px-3 py-2">
+                                    <i class="bi bi-exclamation-triangle-fill me-1"></i> Égalité persistante
+                                </span>
                             <?php else: ?>
                                 <span class="badge bg-primary px-3 py-2">
-                                    <i class="bi bi-check2-circle me-1"></i> Scrutin clôturé &bull; Résultats proclamés
+                                    <i class="bi bi-check2-circle me-1"></i> Résultats publiés
                                 </span>
                             <?php endif; ?>
+                        <?php elseif ($isCloturee): ?>
+                            <span class="badge bg-secondary px-3 py-2">
+                                <i class="bi bi-hourglass-split me-1"></i> Résultats en attente de proclamation
+                            </span>
                         <?php endif; ?>
                     </div>
                 </div>
             </div>
 
-            <?php if ($publicCase === 1): ?>
+            <?php if ($isCloturee && !$resultatsPublics): ?>
+                <div class="results-card p-4 p-md-5 text-center rs-reveal" style="--d:.2s">
+                    <div class="rounded-circle bg-secondary-subtle text-secondary d-inline-flex align-items-center justify-content-center mx-auto mb-3 rs-state-icon">
+                        <i class="bi bi-hourglass-split fs-1"></i>
+                    </div>
+                    <span class="badge bg-secondary px-3 py-2 mx-auto mb-2 d-table">Scrutin clôturé</span>
+                    <h3 class="h4 fw-bold mb-2 results-heading">Les résultats ne sont pas encore proclamés</h3>
+                    <p class="results-text-muted mx-auto mb-0" style="max-width: 560px;">
+                        Le scrutin « <?= SecurityHelper::e($currentElection['titre']) ?> » est clôturé. Les résultats seront affichés après leur certification par le bureau.
+                    </p>
+                </div>
+
+            <?php elseif ($publicCase === 1): ?>
                 <!-- CAS 1 : Le dernier scrutin est en préparation -->
                 <div class="results-card p-4 p-md-5 text-center rs-reveal" style="--d:.2s">
                     <div class="rounded-circle bg-secondary-subtle text-secondary d-inline-flex align-items-center justify-content-center mx-auto mb-3 rs-state-icon rs-spin">
@@ -1647,9 +1668,12 @@ $publicCase = $isCloturee ? 5 : (int)($phaseInfo['public_case'] ?? 1);
                             <?php if (!empty($currentElection['date_certification'])): ?>
                                 <span class="small ms-1">(certifiés le <?= date('d/m/Y à H:i', strtotime($currentElection['date_certification'])) ?>)</span>
                             <?php endif; ?>
+                        <?php elseif (!empty($currentElection['etat_egalite_persistante'])): ?>
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                            <strong>Égalité persistante &mdash; aucun vainqueur n’est proclamé</strong>
                         <?php else: ?>
                             <i class="bi bi-info-circle-fill me-1"></i>
-                            <strong>Scrutin clôturé &mdash; Résultats proclamés</strong>
+                            <strong>Scrutin clôturé &mdash; Résultats publiés</strong>
                             <?php
                             $dateClotureAffichee = $donnees['tour']['date_cloture_effective']
                                 ?? $currentElection['date_cloture_effective']

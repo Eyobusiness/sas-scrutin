@@ -16,7 +16,7 @@ Ce projet est développé en **PHP 8 orienté objet (POO)**, **PDO**, **MySQL / 
   - **Étape 1** : Saisie du numéro de téléphone. Vérification que l'élection est ouverte et en cours de validité horaire. Vérification de l'existence du membre et de son éligibilité (`eligibilite_a_voter = 'oui'`). Vérification d'absence de vote préalable.
   - **Étape 2** : Bulletin de vote affichant uniquement les candidats validés (photos, nom, prénoms, profession de foi). Sélection interactive et confirmation solennelle.
   - **Enregistrement par Transaction SQL Atomique** : Enregistrement du suffrage dans la table `votes` (totalement anonymisée, sans référence au votant) et marquage simultané de l'émargement dans `participations` (`statut = 'a_vote'`).
-- **Résultats officiels certifiés (`index.php?page=resultats`)** : Contrôle strict côté serveur. **Aucun résultat n'est diffusé publiquement avant la clôture officielle de l'élection**. Proclamation du vainqueur, calcul des pourcentages, taux de participation et gestion des égalités (ex æquo).
+- **Résultats publics (`index.php?page=resultats`)** : Le public consulte uniquement le scrutin le plus récent. La clôture ne publie pas à elle seule les résultats : ils sont affichés après certification du bureau. Une égalité persistante est affichée dès la clôture, sans vainqueur ni coupe, avec l'instruction « ATTENDRE LES INSTRUCTIONS DU COMITÉ AD HOC ! ». Les anciens scrutins restent consultables dans l'administration.
 
 ### B. Espace Administration Privé
 - **Authentification & Sessions (`index.php?page=login`)** : Connexion par numéro de téléphone et mot de passe hashé (`password_hash` / `password_verify`). Régénération sécurisée de l'ID de session, cookies protégés (`HttpOnly`, `SameSite=Lax`). Protection CSRF sur l'ensemble des formulaires.
@@ -30,6 +30,9 @@ Ce projet est développé en **PHP 8 orienté objet (POO)**, **PDO**, **MySQL / 
   - Création, modification et suivi des scrutins.
   - Cycle de vie : `preparation` &rarr; `ouverte` &rarr; `cloturee`.
   - Possibilité de clôture anticipée avec confirmation solennelle.
+  - Conservation de l'historique de chaque élection et consultation indépendante des résultats et tours précédents.
+  - Création manuelle d'un tour suivant après clôture du précédent, avec sélection des candidats qualifiés et validation motivée du bureau pour toute exception.
+  - La chronologie distingue la clôture effective de la publication des résultats.
 - **Gestion des Candidatures (`index.php?page=candidats`)** :
   - Examen des dossiers de candidature.
   - Statuts : `en_attente`, `validee`, `rejetee` (avec motif obligatoire), `retiree`.
@@ -162,7 +165,7 @@ php database/seed_demo.php
 
 | Rôle | Nom & Prénoms | Téléphone (Identifiant) | Mot de passe |
 | :--- | :--- | :--- | :--- |
-| **Super Admin** | Administrateur Principal | `0173832620` | `Admin2026@` |
+| **Super Admin** | Administrateur Principal | `0701010101` | `Admin2026@` |
 
 ### Numéros de test pour le vote électronique :
 - **Membres Éligibles (`eligibilite = oui`)** :

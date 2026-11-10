@@ -192,6 +192,12 @@ class Election extends BaseModel
     public function update(int $id, array $data): bool
     {
         $existing = $this->findById($id);
+        if (
+            !$existing
+            || (!empty($existing['resultats_certifies']) && ($data['statut'] ?? $existing['statut']) !== 'cloturee')
+        ) {
+            return false;
+        }
         $dateDebutVote  = !empty($data['date_debut_vote']) ? $data['date_debut_vote'] : ($data['date_debut'] ?? null);
         $dateFinVote    = !empty($data['date_fin_vote']) ? $data['date_fin_vote'] : ($data['date_fin'] ?? null);
         $statut         = $data['statut'] ?? ($existing['statut'] ?? 'preparation');
@@ -277,6 +283,9 @@ class Election extends BaseModel
         }
 
         $existing = $this->findById($id);
+        if (!$existing || (!empty($existing['resultats_certifies']) && $statut !== 'cloturee')) {
+            return false;
+        }
         $tourCourant = max(1, (int)($existing['tour_courant'] ?? 1));
 
         if ($statut === 'cloturee') {

@@ -78,7 +78,6 @@ class VoteAdminController
         $selectedTourId = !empty($_GET['tour_id']) ? (int)$_GET['tour_id'] : null;
         $donnees = null;
         if ($selectedElectionId) {
-            $this->electionService->getElectionById($selectedElectionId);
             $donnees = $this->resultatService->getResultats($selectedElectionId, $selectedTourId);
         }
 
